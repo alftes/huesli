@@ -1,0 +1,7 @@
+# Private Familiendaten und Schlüssel – nie ins Repo
+daten/
+backup/
+werkzeug/.kb-ordner
+*.db
+*.db-*
+__pycache__/
