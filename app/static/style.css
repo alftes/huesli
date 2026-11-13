@@ -1,37 +1,47 @@
-/* Hüsli – eigenes Design. Warm, ruhig, gut lesbar auf iPad/iPhone/Mac. */
+/* Hüsli – Design «Swiss Klinik» (wie Pilatus, 13.11.2026): ruhige Flächen, klare Karten, grosse Zahlen.
+   Schriften Inter Tight + IBM Plex Mono (SIL OFL 1.1, lokal in fonts/). Dunkel = «Nachtdienst» (Gelb für die Hauptaktion). */
+@font-face { font-family: "Inter Tight"; font-weight: 400; src: url(fonts/inter-tight-latin-400-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Inter Tight"; font-weight: 500; src: url(fonts/inter-tight-latin-500-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Inter Tight"; font-weight: 600; src: url(fonts/inter-tight-latin-600-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Inter Tight"; font-weight: 700; src: url(fonts/inter-tight-latin-700-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Inter Tight"; font-weight: 800; src: url(fonts/inter-tight-latin-800-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; src: url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 600; src: url(fonts/ibm-plex-mono-latin-600-normal.woff2) format("woff2"); font-display: swap; }
 :root {
-  --bg: #f5f2ec; --flaeche: #ffffff; --flaeche2: #faf8f4; --linie: #e6e0d6; --text: #23211e; --leise: #6f6a62;
-  --akzent: #2f7d6d; --akzent-hell: #e3f0ec; --akzent-text: #ffffff; --warn: #b5532f; --warn-hell: #fbe9e1;
-  --gut: #2f7d4a; --gelb: #b88a00; --gelb-hell: #fbf3da; --schatten: 0 1px 2px rgba(40,30,20,.06), 0 4px 14px rgba(40,30,20,.05);
-  --r: 14px; --r-klein: 9px; --seite: 248px; --leiste: 64px;
+  --bg: #F5F6F8; --flaeche: #FFFFFF; --flaeche2: #F0F2F5; --linie: #DCE1E8; --text: #0E1726; --leise: #5A6575;
+  --akzent: #0057B7; --akzent-hell: #E6F0FB; --akzent-text: #FFFFFF; --warn: #B4231F; --warn-hell: #FCEBEA;
+  --gut: #1F7A45; --gelb: #8A6500; --gelb-hell: #FBF3D6; --tat: #0057B7; --tat-text: #FFFFFF;
+  --schatten: 0 1px 2px rgba(14,23,38,.05), 0 6px 18px rgba(14,23,38,.06);
+  --r: 16px; --r-klein: 11px; --seite: 248px; --leiste: 64px;
   color-scheme: light;
 }
 html[data-thema="dunkel"] {
-  --bg: #141615; --flaeche: #1d201f; --flaeche2: #222624; --linie: #313633; --text: #ece9e3; --leise: #a29d94;
-  --akzent: #5bb39f; --akzent-hell: #1f3530; --akzent-text: #0e1a17; --warn: #e48a66; --warn-hell: #3a2620;
-  --gut: #6cc08a; --gelb: #e0b94a; --gelb-hell: #352e17; --schatten: 0 1px 2px rgba(0,0,0,.3);
+  --bg: #0A1020; --flaeche: #121B2E; --flaeche2: #0F1728; --linie: #25324A; --text: #E8EDF5; --leise: #9AA8BC;
+  --akzent: #8FC0FF; --akzent-hell: #16284A; --akzent-text: #0A1020; --warn: #FF9C8F; --warn-hell: #3A1B1F;
+  --gut: #7FD3A0; --gelb: #FFD700; --gelb-hell: #3A3310; --tat: #FFD700; --tat-text: #0A1020; --schatten: 0 1px 2px rgba(0,0,0,.4);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   html:not([data-thema="hell"]) {
-    --bg: #141615; --flaeche: #1d201f; --flaeche2: #222624; --linie: #313633; --text: #ece9e3; --leise: #a29d94;
-    --akzent: #5bb39f; --akzent-hell: #1f3530; --akzent-text: #0e1a17; --warn: #e48a66; --warn-hell: #3a2620;
-    --gut: #6cc08a; --gelb: #e0b94a; --gelb-hell: #352e17; --schatten: 0 1px 2px rgba(0,0,0,.3);
+    --bg: #0A1020; --flaeche: #121B2E; --flaeche2: #0F1728; --linie: #25324A; --text: #E8EDF5; --leise: #9AA8BC;
+    --akzent: #8FC0FF; --akzent-hell: #16284A; --akzent-text: #0A1020; --warn: #FF9C8F; --warn-hell: #3A1B1F;
+    --gut: #7FD3A0; --gelb: #FFD700; --gelb-hell: #3A3310; --tat: #FFD700; --tat-text: #0A1020; --schatten: 0 1px 2px rgba(0,0,0,.4);
     color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 html { background: var(--bg); -webkit-text-size-adjust: 100%; }
-body { margin: 0; font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: var(--text);
+body { margin: 0; font: 400 16px/1.45 "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: var(--text);
   background: var(--bg); overflow-wrap: anywhere; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--akzent); text-decoration: none; }
-h1 { font-size: 1.6rem; margin: 0; letter-spacing: -.01em; }
-h2 { font-size: 1.08rem; margin: 0 0 .6rem; }
+h1 { font-size: 1.75rem; line-height: 1.1; font-weight: 800; margin: 0; letter-spacing: -.025em; }
+h2 { font-size: 1rem; font-weight: 700; margin: 0 0 .6rem; }
 h3 { font-size: 1rem; margin: 0 0 .4rem; }
 .leise { color: var(--leise); }
 .klein { font-size: .86rem; }
 .versteckt { display: none !important; }
+.auge { font: 600 .72rem/1.2 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--leise); }
 svg.ic { width: 22px; height: 22px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Rahmen */
@@ -39,7 +49,7 @@ svg.ic { width: 22px; height: 22px; flex: none; stroke: currentColor; fill: none
 .rahmen { display: grid; grid-template-columns: var(--seite) minmax(0, 1fr); min-height: 100vh; }
 .seite { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 18px 12px 24px; border-right: 1px solid var(--linie);
   background: var(--flaeche2); }
-.marke { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; padding: 4px 10px 16px; color: var(--text); }
+.marke { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.02em; font-size: 1.2rem; padding: 4px 10px 16px; color: var(--text); }
 .marke img { width: 32px; height: 32px; border-radius: 9px; }
 .nav a { display: flex; align-items: center; gap: 11px; padding: 8px 10px; border-radius: 10px; color: var(--text); margin: 1px 0; }
 .nav a.aktiv { background: var(--akzent-hell); color: var(--akzent); font-weight: 600; }
@@ -55,10 +65,10 @@ svg.ic { width: 22px; height: 22px; flex: none; stroke: currentColor; fill: none
   .rahmen { display: block; }
   .seite { display: none; }
   .inhalt { padding: 16px 14px calc(var(--leiste) + 28px + env(safe-area-inset-bottom)); }
-  h1 { font-size: 1.35rem; }
+  h1 { font-size: 1.5rem; }
   .leiste { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--flaeche);
     border-top: 1px solid var(--linie); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
-  .leiste a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .68rem; color: var(--leise);
+  .leiste a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .72rem; font-weight: 600; color: var(--leise);
     padding: 4px 0; min-width: 0; position: relative; }
   .leiste a.aktiv { color: var(--akzent); }
   .leiste .punkt { position: absolute; top: 0; right: calc(50% - 18px); width: 9px; height: 9px; border-radius: 50%; background: var(--warn); }
@@ -82,11 +92,12 @@ svg.ic { width: 22px; height: 22px; flex: none; stroke: currentColor; fill: none
 
 /* Knöpfe */
 .knopf { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--linie); background: var(--flaeche);
-  border-radius: 10px; padding: 8px 13px; cursor: pointer; color: var(--text); white-space: nowrap; min-height: 40px; }
-.knopf.haupt { background: var(--akzent); color: var(--akzent-text); border-color: var(--akzent); font-weight: 600; }
+  border-radius: 11px; padding: 8px 14px; cursor: pointer; color: var(--text); white-space: nowrap; min-height: 44px; font-weight: 600; }
+.knopf.haupt { background: var(--tat); color: var(--tat-text); border-color: var(--tat); font-weight: 700; }
 .knopf.gefahr { color: var(--warn); }
 .knopf.klein { padding: 4px 10px; min-height: 32px; font-size: .86rem; }
-.knopf.rund { border-radius: 99px; width: 40px; padding: 0; }
+.knopf.klein.rund { width: 32px; }
+.knopf.rund { border-radius: 99px; width: 44px; padding: 0; }
 .knopf:disabled { opacity: .5; cursor: default; }
 .link { background: none; border: 0; color: var(--akzent); padding: 0; cursor: pointer; }
 @media (hover: hover) and (pointer: fine) {
@@ -95,8 +106,8 @@ svg.ic { width: 22px; height: 22px; flex: none; stroke: currentColor; fill: none
   .nav a.aktiv:hover { background: var(--akzent-hell); }
   .zeile.klickbar:hover { background: var(--flaeche2); }
 }
-.plus { position: fixed; right: 18px; bottom: calc(var(--leiste) + 18px + env(safe-area-inset-bottom)); z-index: 31; width: 56px; height: 56px;
-  border-radius: 50%; border: 0; background: var(--akzent); color: var(--akzent-text); box-shadow: 0 6px 18px rgba(0,0,0,.18); display: none;
+.plus { position: fixed; right: 18px; bottom: calc(var(--leiste) + 18px + env(safe-area-inset-bottom)); z-index: 31; width: 58px; height: 58px;
+  border-radius: 18px; border: 0; background: var(--tat); color: var(--tat-text); box-shadow: 0 8px 22px rgba(14,23,38,.22); display: none;
   align-items: center; justify-content: center; }
 .plus svg.ic { width: 28px; height: 28px; stroke-width: 2.2; }
 @media (max-width: 760px) { .plus { display: flex; } .kopf .rechts .nur-gross { display: none; } }
@@ -111,16 +122,16 @@ svg.ic { width: 22px; height: 22px; flex: none; stroke: currentColor; fill: none
 .zeile .unter { display: block; font-size: .84rem; color: var(--leise); }
 .zeile.fertig .titel { text-decoration: line-through; color: var(--leise); }
 .zeile .rechts { margin-left: auto; display: flex; gap: 6px; align-items: center; flex: none; }
-.check { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--leise); background: none; cursor: pointer; display: flex;
+.check { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--linie); background: none; cursor: pointer; display: flex;
   align-items: center; justify-content: center; padding: 0; }
 .check.an { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
 .check svg.ic { width: 16px; height: 16px; stroke-width: 3; }
 .check.eckig { border-radius: 7px; }
-.gruppe-titel { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--leise); margin: 14px 4px 4px; font-weight: 600; }
+.gruppe-titel { font: 600 .72rem/1.2 "IBM Plex Mono", ui-monospace, monospace; text-transform: uppercase; letter-spacing: .1em; color: var(--leise); margin: 16px 4px 4px; }
 
 /* Etiketten */
-.etikett { display: inline-flex; align-items: center; gap: 4px; font-size: .76rem; padding: 1px 8px; border-radius: 99px; background: var(--flaeche2);
-  border: 1px solid var(--linie); color: var(--leise); white-space: nowrap; }
+.etikett { display: inline-flex; align-items: center; gap: 4px; font: 600 .72rem/1 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .02em; padding: 5px 7px; border-radius: 6px; background: var(--flaeche2);
+  border: 1px solid transparent; color: var(--leise); white-space: nowrap; }
 .etikett.warn { background: var(--warn-hell); color: var(--warn); border-color: transparent; }
 .etikett.gelb { background: var(--gelb-hell); color: var(--gelb); border-color: transparent; }
 .etikett.gut { background: var(--akzent-hell); color: var(--akzent); border-color: transparent; }
@@ -146,7 +157,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--akzent); ou
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1px solid var(--linie); background: var(--flaeche2); border-radius: 99px; padding: 5px 11px; cursor: pointer; display: inline-flex;
   align-items: center; gap: 6px; font-size: .9rem; }
-.chip.an { background: var(--akzent-hell); border-color: var(--akzent); color: var(--akzent); font-weight: 600; }
+.chip.an { background: var(--akzent-hell); border-color: transparent; color: var(--akzent); font-weight: 600; }
 .schnell { display: flex; gap: 8px; margin-bottom: 12px; }
 .schnell input { flex: 1; min-width: 0; }
 .suche { position: relative; margin-bottom: 14px; }
@@ -157,7 +168,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--akzent); ou
 .segment button.an { background: var(--flaeche); box-shadow: var(--schatten); font-weight: 600; }
 
 /* Dialog */
-.schleier { position: fixed; inset: 0; background: rgba(20,15,10,.38); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.schleier { position: fixed; inset: 0; background: rgba(10,16,32,.45); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 18px; }
 .dialog { background: var(--flaeche); border-radius: 18px; width: min(560px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 18px 18px 14px;
   box-shadow: 0 20px 50px rgba(0,0,0,.25); }
 .dialog.breit { width: min(820px, 100%); }
@@ -176,11 +187,30 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--akzent); ou
 @media (min-width: 761px) { .meldung { bottom: 24px; } }
 
 /* Übersicht */
-.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 18px; }
-.kachel { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--r); padding: 12px 14px; color: var(--text); display: block; min-width: 0; }
-.kachel .zahl { font-size: 1.5rem; font-weight: 700; display: block; }
-.kachel .text { font-size: .85rem; color: var(--leise); }
+.gruss h1 { font-size: 2.1rem; line-height: 1.05; letter-spacing: -.03em; margin: 6px 0 0; }
+.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; margin: 18px 0 18px; }
+.kachel { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--r); box-shadow: var(--schatten); padding: 14px 14px 12px; color: var(--text);
+  display: flex; flex-direction: column; gap: 10px; min-height: 132px; min-width: 0; }
+.kachel .oben { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--leise); }
+.kachel .zahl { font: 600 2.5rem/1 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: -.04em; margin-top: auto; display: block; white-space: nowrap; }
+.kachel .zahl small { font-size: .95rem; font-weight: 500; letter-spacing: 0; color: var(--leise); }
+.kachel .zahl.lang { font-size: 1.55rem; letter-spacing: -.05em; }
+.kachel .zahl.lang small { font-size: .8rem; }
+.kachel .text { font-size: .85rem; color: var(--leise); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kachel.warn .zahl { color: var(--warn); }
+.kachel.haupt { background: var(--akzent); border-color: transparent; color: #fff; }
+.kachel.haupt .oben, .kachel.haupt .text, .kachel.haupt .auge, .kachel.haupt .zahl small { color: rgba(255,255,255,.85); }
+html[data-thema="dunkel"] .kachel.haupt { background: var(--akzent-hell); color: var(--text); }
+html[data-thema="dunkel"] .kachel.haupt .oben, html[data-thema="dunkel"] .kachel.haupt .text, html[data-thema="dunkel"] .kachel.haupt .auge { color: var(--leise); }
+@media (prefers-color-scheme: dark) {
+  html:not([data-thema="hell"]) .kachel.haupt { background: var(--akzent-hell); color: var(--text); }
+  html:not([data-thema="hell"]) .kachel.haupt .oben, html:not([data-thema="hell"]) .kachel.haupt .text, html:not([data-thema="hell"]) .kachel.haupt .auge { color: var(--leise); }
+}
+.kachel.breit { grid-column: 1 / -1; min-height: 0; flex-direction: row; align-items: center; gap: 14px; }
+.kachel.breit .haupt { flex: 1; min-width: 0; }
+.kachel.breit b { display: block; font-weight: 600; }
+@media (max-width: 760px) { .kacheln { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (hover: hover) and (pointer: fine) { .kachel:hover { border-color: var(--akzent); } }
 .familie-reihe { display: flex; flex-wrap: wrap; gap: 14px; }
 .mitglied { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; font-size: .8rem; text-align: center; color: var(--text); }
 
@@ -231,7 +261,7 @@ html[data-thema="dunkel"] .notiz-farbe-grau { background: #2a2c2b; }
 .woche .tagspalte.heute { border-color: var(--akzent); }
 
 /* Ausgaben */
-.betrag { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.betrag { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; letter-spacing: -.02em; white-space: nowrap; }
 .plus-betrag { color: var(--gut); } .minus-betrag { color: var(--warn); }
 .balken { height: 8px; background: var(--flaeche2); border-radius: 99px; overflow: hidden; }
 .balken > i { display: block; height: 100%; background: var(--akzent); border-radius: 99px; }

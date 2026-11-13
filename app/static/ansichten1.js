@@ -86,12 +86,20 @@ V.uebersicht = function () {
   const evHeute = ereignisse(jetztD, jetztD).filter(x => x.art !== "aufgabe");
   const woche = ereignisse(plusTage(jetztD, 1), plusTage(jetztD, 7));
   const einkauf = S.module.includes("einkauf") ? alle("einkauf", e => !e.erledigt).length : 0;
+  const kachel = (art, titel, icon, link, zahl, text) => h("a", { class: "kachel " + art, href: link },
+    h("span", { class: "oben" }, h("span", { class: "auge" }, titel), ic(icon)), h("span", { class: "zahl" + (String(zahl.textContent || zahl).length > 5 ? " lang" : "") }, zahl), h("span", { class: "text" }, text));
+  const naechster = evHeute.find(x => zeitTeil(x.datum) && x.datum.slice(11, 16) >= new Date().toTimeString().slice(0, 5)) || evHeute.find(x => zeitTeil(x.datum));
+  const zeitZahl = naechster ? h("span", null, zeitTeil(naechster.datum).slice(0, 2), h("small", null, ":" + zeitTeil(naechster.datum).slice(3, 5))) : null;
+  const einkaufOffen = S.module.includes("einkauf") ? alle("einkauf", e => !e.erledigt) : [];
+  const geb = S.module.includes("geburtstage") ? geburtstagsListe().find(g => g.tage <= 14) : null;
   const kacheln = h("div", { class: "kacheln" },
-    S.module.includes("aufgaben") ? h("a", { class: "kachel" + (ueber.length ? " warn" : ""), href: "#/aufgaben" }, h("span", { class: "zahl" }, ueber.length + heuteA.length), h("span", { class: "text" }, ueber.length ? `fällig, ${ueber.length} überfällig` : "heute fällig")) : null,
-    S.module.includes("kalender") ? h("a", { class: "kachel", href: "#/kalender" }, h("span", { class: "zahl" }, evHeute.length), h("span", { class: "text" }, "Termine heute")) : null,
-    S.module.includes("einkauf") ? h("a", { class: "kachel", href: "#/einkauf" }, h("span", { class: "zahl" }, einkauf), h("span", { class: "text" }, "auf der Einkaufsliste")) : null,
-    S.module.includes("ausgaben") ? ausgabenKachel() : null,
-    h("a", { class: "kachel" + (S.hinweise ? " warn" : ""), href: "#/hinweise" }, h("span", { class: "zahl" }, S.hinweise), h("span", { class: "text" }, "neue Hinweise")));
+    S.module.includes("aufgaben") ? kachel("haupt", "Aufgaben", "aufgaben", "#/aufgaben", ueber.length + heuteA.length, ueber.length ? `fällig, ${ueber.length} überfällig` : "heute fällig") : null,
+    S.module.includes("einkauf") ? kachel("", "Einkauf", "einkauf", "#/einkauf", einkauf, einkaufOffen.slice(0, 4).map(x => x.titel).join(", ") || "Liste ist leer") : null,
+    S.module.includes("kalender") ? kachel("", "Heute", "kalender", "#/kalender", zeitZahl || evHeute.length, naechster ? naechster.titel : evHeute.length === 1 ? "Termin heute" : "Termine heute") : null,
+    S.module.includes("ausgaben") ? ausgabenKachel(kachel) : null,
+    geb ? h("a", { class: "kachel breit", href: "#/geburtstage" }, ic("geburtstage"), h("span", { class: "haupt" }, h("b", null, geb.tage === 0 ? `${geb.name} hat heute Geburtstag` : `${geb.name} hat Geburtstag`),
+      h("span", { class: "text" }, geb.tage === 0 ? "Heute" : geb.tage === 1 ? "Morgen" : `in ${geb.tage} Tagen · ${fmtLang(iso(geb.naechster))}`)), h("span", { class: "etikett gut" }, geb.tage === 0 ? "HEUTE" : geb.tage + " T")) : null,
+    S.hinweise ? h("a", { class: "kachel breit", href: "#/hinweise" }, ic("hinweise"), h("span", { class: "haupt" }, h("b", null, S.hinweise === 1 ? "1 neuer Hinweis" : `${S.hinweise} neue Hinweise`)), h("span", { class: "etikett warn" }, "NEU")) : null);
 
   const zeileAufgabe = e => h("li", { class: "zeile" }, checkKnopf(false, () => abhaken(e)),
     h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel),
@@ -139,7 +147,7 @@ V.uebersicht = function () {
       return [h("div", { class: "gruppe-titel" }, hh.emoji + " " + hh.name), h("div", { class: "familie-reihe" }, ps.map(p => h("a", { class: "mitglied", href: "#/mitglieder/" + p.id }, ava(p), p.name)))]; }));
 
   return mitPlus(seite(
-    h("div", { class: "gruss" }, h("h1", null, `${gruss()}, ${S.ich.name}`)), h("div", { class: "leise" }, fmtLang(heute)),
+    h("div", { class: "gruss" }, h("div", { class: "auge" }, fmtLang(heute)), h("h1", null, gruss() + ",", h("br"), S.ich.name)),
     kacheln,
     h("div", { class: "zwei" }, h("div", { class: "stapel" }, heuteKarte, wocheKarte, akt), h("div", { class: "stapel" }, einkaufKarte, gebKarte, tierKarte, familie))), schnellNeu);
 };
@@ -172,11 +180,11 @@ function schnellNeu() {
     onclick: () => { zu(); if (t === "einkauf") { const l = alle("einkauf_liste")[0]; if (l) location.hash = "#/einkauf/" + l.id; else bearbeiten("einkauf_liste"); }
       else if (t === "ausgabe") { const k = alle("ausgaben_topf")[0]; if (k) ausgabeNeu(k); else bearbeiten("ausgaben_topf"); } else bearbeiten(t); } }, n))));
 }
-function ausgabenKachel() {
+function ausgabenKachel(kachel) {
   let summe = 0;
   for (const t of alle("ausgaben_topf")) summe += (salden(t).netto[S.ich.id] || 0);
-  return h("a", { class: "kachel", href: "#/ausgaben" }, h("span", { class: "zahl " + (summe < -0.004 ? "minus-betrag" : summe > 0.004 ? "plus-betrag" : "") }, chf(summe).replace("CHF ", "")),
-    h("span", { class: "text" }, summe < -0.004 ? "CHF schuldest du" : summe > 0.004 ? "CHF bekommst du" : "CHF – alles ausgeglichen"));
+  const zahl = h("span", { class: summe < -0.004 ? "minus-betrag" : summe > 0.004 ? "plus-betrag" : "" }, chf(Math.abs(summe)).replace("CHF ", ""), h("small", null, " CHF"));
+  return kachel("", "Ausgaben", "ausgaben", "#/ausgaben", zahl, summe < -0.004 ? "schuldest du" : summe > 0.004 ? "bekommst du" : "alles ausgeglichen");
 }
 
 /* ---------- Aufgaben ---------- */
