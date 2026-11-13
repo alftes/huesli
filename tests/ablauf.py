@@ -30,17 +30,17 @@ with sync_playwright() as pw:
     assert p.locator("text=Velo putzen").count() > 0; schritt("Aufgabe")
     p.locator(".schnell input").fill("Steuererklärung"); p.keyboard.press("Enter"); warte()
     assert p.locator("text=Steuererklärung").count() > 0; schritt("Schnell-Aufgabe")
-    p.locator("li.zeile", has_text="Steuererklärung").locator("button.check").click(); warte(); schritt("abhaken")
+    p.locator("li.zeile", has_text="Steuererklärung").locator(".check input").click(); warte(); schritt("abhaken")
     # Einkauf
     p.goto(URL + "#/einkauf"); warte()
     if p.locator(".schnell input").count() == 0: p.locator("a.karte").first.click(); warte()
     p.locator(".schnell input").fill("2 l Milch, Katzenstreu, Äpfel"); p.keyboard.press("Enter"); time.sleep(1)
     assert p.locator("text=Milch").count() > 0 and p.locator(".gruppe-titel", has_text="Tier").count() > 0, "Kategorien"; schritt("Einkauf + Abteilungen")
-    p.locator("li.zeile", has_text="Äpfel").locator("button.check").click(); warte()
+    p.locator("li.zeile", has_text="Äpfel").locator(".check input").click(); warte()
     p.locator("text=Erledigte entfernen").click(); warte(); schritt("Einkauf abhaken/entfernen")
     # Ausgaben
     p.goto(URL + "#/ausgaben"); warte(); neu_knopf()
-    feld("Name", "Ferien Tessin"); p.locator(".dialog .chip", has_text="Edgar").click(); speichern()
+    feld("Name", "Ferien Tessin"); p.locator(".dialog label.haken", has_text="Edgar").click(); speichern()
     neu_knopf(); feld("Wofür", "Hotel"); feld("Betrag", "300"); speichern()
     assert p.locator("text=Edgar → Alfred").count() > 0, "Ausgleich"; schritt("Kasse + Ausgabe + Ausgleich")
     # Notiz mit Checkliste
@@ -68,7 +68,7 @@ with sync_playwright() as pw:
     neu_knopf(); feld("Kilometerstand", "50600"); feld("Liter", "40"); feld("Kosten", "70"); speichern(); schritt("Fahrzeug + Tanken")
     # Haustier
     p.goto(URL + "#/haustiere"); warte(); p.locator("a.karte", has_text="Dexter").click(); warte(); neu_knopf()
-    feld("Was?", "💉 Impfung"); feld("Gewicht", "4.6"); speichern()
+    feld("Was?", "Impfung"); feld("Gewicht", "4.6"); speichern()
     assert p.locator("text=Steht an").count() > 0, "Impfung fällig"; schritt("Tier-Impfung mit Erinnerung")
     p.goto(URL + "#/haustiere/" + p.url.split("/")[-1] + "/sitter") if False else None
     # Projekt

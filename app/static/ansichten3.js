@@ -45,7 +45,7 @@ V.vorrat = function (args, q) {
     knapp.length ? h("div", { class: "karte", style: { "margin-bottom": "14px", background: "var(--warn-hell)" } }, h("div", { class: "karte-kopf" }, h("b", null, `${knapp.length} knapp: `),
       h("span", null, knapp.map(e => e.titel).join(", ")), h("span", { class: "rechts" }, knopf("Auf die Einkaufsliste", () => aufEinkaufsliste(knapp.map(e => ({ titel: e.titel })), null, "Vorrat"), "klein")))) : null,
     xs.length ? Object.keys(nachOrt).sort().map(o => [h("div", { class: "gruppe-titel" }, o), h("ul", { class: "liste karte knapp" }, nachOrt[o].map(zeile))])
-      : leer("📦", art === "vorrat" ? "Vorräte erfassen und bei «knapp» direkt auf die Einkaufsliste." : "Wertsachen und Geräte mit Garantie und Kaufpreis – praktisch für die Hausratversicherung.")),
+      : leer("", art === "vorrat" ? "Vorräte erfassen und bei «knapp» direkt auf die Einkaufsliste." : "Wertsachen und Geräte mit Garantie und Kaufpreis – praktisch für die Hausratversicherung.")),
     () => bearbeiten("vorrat", null, { daten: { kategorie: art } }));
 };
 
@@ -68,7 +68,7 @@ FORMULARE.fahrzeug = {
   ],
   danach: n => { location.hash = "#/fahrzeuge/" + n.id; },
 };
-const FZ_ARTEN = [["tanken", "⛽ Tanken / Laden"], ["service", "🔧 Service"], ["reparatur", "🛠 Reparatur"], ["reifen", "🛞 Reifenwechsel"], ["mfk", "✅ MFK"], ["sonst", "📝 Sonstiges"]];
+const FZ_ARTEN = [["tanken", "Tanken / Laden"], ["service", "Service"], ["reparatur", "Reparatur"], ["reifen", "Reifenwechsel"], ["mfk", "MFK"], ["sonst", "Sonstiges"]];
 FORMULARE.fahrzeug_eintrag = {
   titel: "Fahrtenbuch", sicht: false,
   felder: () => [
@@ -80,7 +80,7 @@ FORMULARE.fahrzeug_eintrag = {
     { key: "d.voll", text: "Vollgetankt", art: "haken", std: true, halb: true },
     { key: "d.notiz", text: "Notiz", platz: "z. B. Garage, was gemacht wurde" },
   ],
-  vorher: res => { res.titel = (FZ_ARTEN.find(a => a[0] === (res.daten.art || "tanken")) || [0, "Eintrag"])[1].replace(/^\S+\s/, ""); },
+  vorher: res => { res.titel = (FZ_ARTEN.find(a => a[0] === (res.daten.art || "tanken")) || [0, "Eintrag"])[1]; },
   danach: async n => { const f = S.E.get(n.eltern_id); if (f && zahl(n.daten.km) > zahl(f.daten.km)) await aendern(f.id, { daten: { km: zahl(n.daten.km) } }); },
 };
 function verbrauch(fid) {
@@ -106,24 +106,23 @@ V.fahrzeuge = function (args) {
   const xs = alle("fahrzeug");
   return mitPlus(seite(kopf("Fahrzeuge", [neuKnopf("Fahrzeug", () => bearbeiten("fahrzeug"))]),
     xs.length ? h("div", { class: "raster" }, xs.map(e => h("a", { class: "karte", href: "#/fahrzeuge/" + e.id, style: { color: "var(--text)" } },
-      h("div", { class: "karte-kopf" }, h("span", { style: { "font-size": "1.5rem" } }, "🚗"), h("h2", null, e.titel), h("span", { class: "rechts" }, sichtEtikett(e))),
+      h("div", { class: "karte-kopf" }, h("h2", null, e.titel), h("span", { class: "rechts" }, sichtEtikett(e))),
       h("div", { class: "klein leise" }, [e.daten.kennzeichen, e.daten.modell, e.daten.km ? Number(e.daten.km).toLocaleString("de-CH") + " km" : null].filter(Boolean).join(" · ")),
-      h("div", { class: "chips", style: { "margin-top": "8px" } }, fzFaellig(e).slice(0, 3).map(f => h("span", { class: "etikett" + (f.n < 0 ? " warn" : f.n <= 30 ? " gelb" : "") }, f.t + (f.d ? " " + fmtRelativ(f.d) : "")))))))
-      : leer("🚗", "Auto, Velo oder Roller erfassen – mit MFK, Service, Vignette und Reifenwechsel-Erinnerung.")), () => bearbeiten("fahrzeug"));
+      h("div", { class: "etiketten" }, fzFaellig(e).slice(0, 3).map(f => h("span", { class: "etikett" + (f.n < 0 ? " warn" : f.n <= 30 ? " gelb" : "") }, f.t + (f.d ? " " + fmtRelativ(f.d) : "")))))))
+      : leer("", "Auto, Velo oder Roller erfassen – mit MFK, Service, Vignette und Reifenwechsel-Erinnerung.")), () => bearbeiten("fahrzeug"));
 }
 function fahrzeugDetail(id) {
   const e = S.E.get(id);
-  if (!e) return leer("🤷", "Fahrzeug nicht gefunden.");
+  if (!e) return leer("", "Fahrzeug nicht gefunden.");
   const log = kinder(id, "fahrzeug_eintrag").sort((a, b) => (b.datum || "") < (a.datum || "") ? -1 : 1);
   const v = verbrauch(id);
   const jahr = String(new Date().getFullYear());
   const kostenJahr = log.filter(x => (x.datum || "").startsWith(jahr)).reduce((s, x) => s + zahl(x.daten.kosten), 0);
-  return mitPlus(seite(kopf("🚗 " + e.titel, [neuKnopf("Eintrag", () => bearbeiten("fahrzeug_eintrag", null, { eltern_id: id })), knopf("", () => bearbeiten("fahrzeug", e), "rund", "stift")], ["#/fahrzeuge", "Fahrzeuge"]),
+  return mitPlus(seite(kopf(e.titel, [neuKnopf("Eintrag", () => bearbeiten("fahrzeug_eintrag", null, { eltern_id: id })), knopf("", () => bearbeiten("fahrzeug", e), "rund", "stift")], ["#/fahrzeuge", "Fahrzeuge"]),
     h("div", { class: "zwei" }, h("div", null, h("h2", null, "Fahrtenbuch"),
       log.length ? h("ul", { class: "liste karte knapp" }, log.map(x => h("li", { class: "zeile klickbar", onclick: () => bearbeiten("fahrzeug_eintrag", x) },
-        h("span", null, (FZ_ARTEN.find(a => a[0] === (x.daten.art || "tanken")) || ["", "📝"])[1].split(" ")[0]),
         h("span", { class: "haupt" }, h("span", { class: "titel" }, x.titel), h("span", { class: "unter" }, [fmtDatum(x.datum), x.daten.km ? Number(x.daten.km).toLocaleString("de-CH") + " km" : null, x.daten.liter ? x.daten.liter + " l" : null, x.daten.notiz].filter(Boolean).join(" · "))),
-        x.daten.kosten ? h("span", { class: "betrag" }, chf(x.daten.kosten)) : null))) : leer("⛽", "Noch keine Einträge.")),
+        x.daten.kosten ? h("span", { class: "betrag" }, chf(x.daten.kosten)) : null))) : leer("", "Noch keine Einträge.")),
       h("div", { class: "stapel" }, h("div", { class: "karte" }, h("h2", null, "Fällig"), fzFaellig(e).length ? h("ul", { class: "liste" }, fzFaellig(e).map(f => h("li", { class: "zeile" },
         h("span", { class: "haupt" }, f.t), h("span", { class: "etikett" + (f.n < 0 ? " warn" : f.n <= 30 ? " gelb" : "") }, f.d ? fmtDatum(f.d) : "jetzt")))) : h("p", { class: "leise" }, "Nichts eingetragen.")),
         h("div", { class: "karte" }, h("h2", null, "Angaben"), h("dl", { class: "eigenschaften" },
@@ -134,8 +133,8 @@ function fahrzeugDetail(id) {
 }
 
 /* ---------- Haustiere ---------- */
-const TIER_ARTEN = [["impfung", "💉 Impfung"], ["entwurmung", "🪱 Entwurmung"], ["parasiten", "🕷 Floh-/Zeckenschutz"], ["tierarzt", "🩺 Tierarzt"], ["gewicht", "⚖️ Gewicht"],
-  ["krallen", "✂️ Krallen / Pflege"], ["futter", "🥣 Futter gekauft"], ["sonst", "📝 Sonstiges"]];
+const TIER_ARTEN = [["impfung", "Impfung"], ["entwurmung", "Entwurmung"], ["parasiten", "Floh-/Zeckenschutz"], ["tierarzt", "Tierarzt"], ["gewicht", "Gewicht"],
+  ["krallen", "Krallen / Pflege"], ["futter", "Futter gekauft"], ["sonst", "Sonstiges"]];
 const TIER_INTERVALL = { impfung: 365, entwurmung: 90, parasiten: 30 };
 FORMULARE.tier_eintrag = {
   titel: "Haustier-Eintrag",
@@ -150,7 +149,7 @@ FORMULARE.tier_eintrag = {
     { key: "d.kosten", text: "Kosten (CHF)", art: "zahl", halb: true },
     { key: "d.notiz", text: "Notiz", art: "textarea", zeilen: 2, platz: "z. B. Impfstoff, Mittel, Befund" },
   ],
-  vorher: res => { if (!res.daten.tier_id) throw meldung("Tier wählen"); res.titel = (TIER_ARTEN.find(a => a[0] === (res.daten.art || "impfung")) || [0, "Eintrag"])[1].replace(/^\S+\s/, ""); },
+  vorher: res => { if (!res.daten.tier_id) throw meldung("Tier wählen"); res.titel = (TIER_ARTEN.find(a => a[0] === (res.daten.art || "impfung")) || [0, "Eintrag"])[1]; },
 };
 function tierEintraege(tid) { return alle("tier_eintrag", e => e.daten.tier_id === tid).sort((a, b) => (b.datum || "") < (a.datum || "") ? -1 : 1); }
 function tierFaellig(tid) {
@@ -166,8 +165,8 @@ V.haustiere = function (args) {
     ts.length ? h("div", { class: "raster" }, ts.map(t => { const f = tierFaellig(t.id), hh = haushalt(t.haushalt_id);
       return h("a", { class: "karte", href: "#/haustiere/" + t.id, style: { color: "var(--text)" } }, h("div", { class: "profil", style: { "margin-bottom": "6px" } }, ava(t, "gross"),
         h("div", null, h("h2", { style: { margin: 0 } }, t.name), h("div", { class: "leise klein" }, [t.daten.tierart, t.daten.rasse, alterText(t.geburtstag), hh ? hh.emoji + " " + hh.name : null].filter(Boolean).join(" · ")))),
-        f.length ? h("div", { class: "chips" }, f.slice(0, 3).map(e => h("span", { class: "etikett" + (tageBis(e.daten.naechstes) < 0 ? " warn" : tageBis(e.daten.naechstes) <= 14 ? " gelb" : "") }, `${e.titel} ${fmtRelativ(e.daten.naechstes)}`))) : h("div", { class: "leise klein" }, "Nichts fällig ✓")); }))
-      : leer("🐾", "Noch keine Haustiere.")), () => bearbeiten("tier_eintrag", null, { daten: { tier_id: (ts[0] || {}).id } }));
+        f.length ? h("div", { class: "etiketten" }, f.slice(0, 3).map(e => h("span", { class: "etikett" + (tageBis(e.daten.naechstes) < 0 ? " warn" : tageBis(e.daten.naechstes) <= 14 ? " gelb" : "") }, `${e.titel} ${fmtRelativ(e.daten.naechstes)}`))) : h("div", null, h("span", { class: "erfuellt" }, "nichts fällig"))); }))
+      : leer("", "Noch keine Haustiere.")), () => bearbeiten("tier_eintrag", null, { daten: { tier_id: (ts[0] || {}).id } }));
 };
 function alterText(g) {
   const d = alsDatum(g); if (!d || d.getFullYear() <= 1900) return null;
@@ -177,7 +176,7 @@ function alterText(g) {
 }
 function tierDetail(tid, modus) {
   const t = person(tid);
-  if (!t || t.rolle !== "tier") return leer("🤷", "Tier nicht gefunden.");
+  if (!t || t.rolle !== "tier") return leer("", "Tier nicht gefunden.");
   const es = tierEintraege(tid), f = tierFaellig(tid);
   const gew = es.filter(e => zahl(e.daten.gewicht)).slice(0, 12).reverse();
   const tierarzt = t.daten.tierarzt_id && S.E.get(t.daten.tierarzt_id);
@@ -206,9 +205,8 @@ function tierDetail(tid, modus) {
         h("span", { class: "etikett" + (tageBis(e.daten.naechstes) < 0 ? " warn" : tageBis(e.daten.naechstes) <= 14 ? " gelb" : "") }, fmtRelativ(e.daten.naechstes)),
         S.ich.rolle !== "gast" ? knopf("Erledigt", () => bearbeiten("tier_eintrag", null, { daten: { tier_id: tid, art: e.daten.art, naechstes: TIER_INTERVALL[e.daten.art] ? iso(plusTage(new Date(), TIER_INTERVALL[e.daten.art])) : null } }), "klein") : null)))) : null,
       h("div", null, h("h2", null, "Verlauf"), es.length ? h("ul", { class: "liste karte knapp" }, es.map(e => h("li", { class: "zeile klickbar", onclick: () => bearbeiten("tier_eintrag", e) },
-        h("span", null, (TIER_ARTEN.find(a => a[0] === e.daten.art) || ["", "📝"])[1].split(" ")[0]),
         h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel + (e.daten.gewicht ? `: ${e.daten.gewicht} kg` : "")), h("span", { class: "unter" }, [fmtDatum(e.datum), e.daten.notiz, e.daten.naechstes ? "nächstes " + fmtDatum(e.daten.naechstes) : null].filter(Boolean).join(" · "))),
-        e.daten.kosten ? h("span", { class: "betrag" }, chf(e.daten.kosten)) : null))) : leer("📋", "Noch keine Einträge. Impfungen, Entwurmung, Tierarzt, Gewicht …"))),
+        e.daten.kosten ? h("span", { class: "betrag" }, chf(e.daten.kosten)) : null))) : leer("", "Noch keine Einträge. Impfungen, Entwurmung, Tierarzt, Gewicht …"))),
       h("div", { class: "stapel" }, info, gew.length > 1 ? gewichtKurve(gew) : null))), () => bearbeiten("tier_eintrag", null, { daten: { tier_id: tid } }));
 }
 function gewichtKurve(gew) {
@@ -233,7 +231,6 @@ function personDialog(p, rolleNeu) {
   const kontakte = alle("kontakt").filter(k => ["Tierarzt", "Arzt"].includes(k.daten.kategorie) || tier);
   const felder = [
     { key: "name", text: "Name", pflicht: true },
-    { key: "emoji", text: "Symbol (Emoji)", halb: true, max: 8, std: tier ? "🐈" : "🙂" },
     { key: "farbe", text: "Farbe", art: "auswahl", halb: true, optionen: FARBEN.map(f => [f, f]), std: FARBEN[Math.floor(Math.random() * FARBEN.length)] },
     { key: "geburtstag", text: "Geburtstag", art: "datum", halb: true },
   ];
@@ -269,7 +266,7 @@ async function einladen(p) {
     { text: "Fertig", art: "haupt", tun: () => true }].filter(Boolean));
 }
 function haushaltDialog(hh) {
-  formular(hh ? "Haushalt bearbeiten" : "Neuer Haushalt", [{ key: "name", text: "Name", pflicht: true }, { key: "emoji", text: "Symbol", std: "🏠", max: 8 }], hh || {}, async res => {
+  formular(hh ? "Haushalt bearbeiten" : "Neuer Haushalt", [{ key: "name", text: "Name", pflicht: true }], hh || {}, async res => {
     if (hh) await api("PATCH", "/haushalte/" + hh.id, res); else await api("POST", "/haushalte", res);
     await laden(); neuZeichnen();
   }, { loeschen: hh && S.ich.rolle === "admin" ? async () => { await api("DELETE", "/haushalte/" + hh.id); await laden(); neuZeichnen(); } : null });
@@ -300,7 +297,7 @@ V.mitglieder = function (args) {
 };
 function personDetail(pid) {
   const p = person(pid);
-  if (!p) return leer("🤷", "Person nicht gefunden.");
+  if (!p) return leer("", "Person nicht gefunden.");
   if (p.rolle === "tier" && S.module.includes("haustiere")) { setTimeout(() => location.replace("#/haustiere/" + pid), 0); return h("div"); }
   const darf = S.ich.rolle === "admin" || p.id === S.ich.id || (S.ich.rolle === "erwachsen" && ["kind", "tier"].includes(p.rolle) && p.haushalt_id === S.ich.haushalt_id);
   const auf = alle("aufgabe", e => !e.erledigt && e.zugewiesen_id === pid);
@@ -336,7 +333,7 @@ V.hinweise = function () {
     box.replaceChildren(xs.length ? h("ul", { class: "liste karte knapp" }, xs.map(x => h("li", { class: "zeile klickbar", style: x.gelesen ? null : { "font-weight": "600" }, onclick: async () => {
       if (!x.gelesen) { await api("POST", "/hinweise/gelesen", { id: x.id }); S.hinweise = Math.max(0, S.hinweise - 1); } if (x.link) location.hash = x.link; else neuZeichnen(); } },
       x.gelesen ? null : h("span", { class: "ava mini", style: { background: "var(--warn)", width: "10px", height: "10px" } }),
-      h("span", { class: "haupt" }, h("span", { class: "titel" }, x.text), h("span", { class: "unter" }, fmtVor(x.zeit)))))) : leer("🔔", "Keine Hinweise. Erinnerungen an Fälliges, Geburtstage, MFK, Impfungen und Zuweisungen erscheinen hier."));
+      h("span", { class: "haupt" }, h("span", { class: "titel" }, x.text), h("span", { class: "unter" }, fmtVor(x.zeit)))))) : leer("", "Keine Hinweise. Erinnerungen an Fälliges, Geburtstage, MFK, Impfungen und Zuweisungen erscheinen hier."));
   });
   return seite(kopf("Hinweise", [knopf("Alle gelesen", async () => { await api("POST", "/hinweise/gelesen", { alle: true }); S.hinweise = 0; neuZeichnen(); })]), box);
 };
@@ -349,7 +346,7 @@ V.papierkorb = function () {
       h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel || "(ohne Titel)"), h("span", { class: "unter" }, `${TYP_NAME[e.typ] || e.typ} · gelöscht ${fmtVor(e.geloescht)} von ${name(e.geaendert_von)}`)),
       knopf("Wiederherstellen", async () => { await api("POST", `/eintraege/${e.id}/wiederherstellen`); await laden(); laden2(); meldung("Wiederhergestellt"); }, "klein"),
       knopf("", async () => { if (await bestaetigen(`«${e.titel}» endgültig löschen?`)) { await api("DELETE", `/eintraege/${e.id}?endgueltig=1`); laden2(); } }, "klein rund gefahr", "x"))))
-      : leer("🗑", "Der Papierkorb ist leer."));
+      : leer("", "Der Papierkorb ist leer."));
   });
   laden2();
   return seite(kopf("Papierkorb"), h("p", { class: "leise" }, "Gelöschtes bleibt 30 Tage hier und wird dann automatisch entfernt."), box);
@@ -367,7 +364,7 @@ V.suche = function (args, q) {
     (treffer.length || pers.length) ? h("ul", { class: "liste karte knapp" }, pers.map(p => h("li", { class: "zeile klickbar", onclick: () => location.hash = "#/mitglieder/" + p.id }, ava(p, "mini"), h("span", { class: "haupt" }, p.name), h("span", { class: "etikett" }, ROLLE_NAME[p.rolle]))),
       treffer.map(e => h("li", { class: "zeile klickbar", onclick: () => { const l = linkFuer({ typ: e.typ, eintrag_id: e.id }); if (["aufgabe", "notiz", "kontakt", "termin", "vorrat", "geburtstag"].includes(e.typ)) { location.hash = l; setTimeout(() => bearbeiten(e.typ, e), 80); } else location.hash = l; } },
         h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel || "(ohne Titel)"), h("span", { class: "unter" }, TYP_NAME[e.typ] + (e.eltern_id && S.E.get(e.eltern_id) ? " · " + S.E.get(e.eltern_id).titel : ""))), sichtEtikett(e))))
-      : leer("🔍", "Nichts gefunden."));
+      : leer("", "Nichts gefunden."));
 };
 
 /* ---------- Mehr (Handy) ---------- */
@@ -375,13 +372,13 @@ V.mehr = function () {
   const wahl = leisteWahl();
   const setze = async k => {
     let neuW = wahl.includes(k) ? wahl.filter(x => x !== k) : [...wahl, k];
-    if (neuW.length > 4) { meldung("Höchstens 4 – zuerst eine Nadel entfernen"); return; }
+    if (neuW.length > 4) { meldung("Höchstens 4 – zuerst ein Häkchen entfernen"); neuZeichnen(); return; }
     await api("PATCH", "/personen/" + S.ich.id, { daten: { leiste: neuW } }); S.ich.daten.leiste = neuW; neuZeichnen();
   };
-  return seite(kopf("Mehr"), h("p", { class: "leise klein" }, "📌 antippen, um bis zu vier Abkürzungen für die untere Leiste zu wählen."),
+  return seite(kopf("Mehr"), h("p", { class: "leise klein" }, "Bis zu vier Bereiche für die Kopfleiste wählen."),
     h("ul", { class: "liste karte knapp" }, navSichtbar().filter(n => !n.trenner).map(n => h("li", { class: "zeile klickbar", onclick: () => location.hash = n.p },
       ic(n.i), h("span", { class: "haupt" }, n.n, n.k === "hinweise" && S.hinweise ? h("span", { class: "etikett warn", style: { "margin-left": "6px" } }, S.hinweise) : null),
-      h("button", { class: "knopf rund klein" + (wahl.includes(n.k) ? " haupt" : ""), "aria-label": "Für die Leiste anheften", onclick: ev => { ev.stopPropagation(); setze(n.k); } }, ic("nadel"))))));
+      h("label", { class: "check mit-text", onclick: ev => ev.stopPropagation() }, h("input", { type: "checkbox", checked: wahl.includes(n.k), onchange: () => setze(n.k) }), h("span", { class: "etikett" }, "in Kopfleiste"))))));
 };
 
 /* ---------- Einstellungen ---------- */
@@ -437,7 +434,7 @@ function passwortDialog() {
 function kopierFeld(wert) {
   const i = h("input", { class: "eingabe", value: wert, readonly: true, onclick: () => i.select() });
   return h("div", { class: "schnell", style: { "margin-bottom": "6px" } }, i, knopf("Kopieren", async () => {
-    try { await navigator.clipboard.writeText(wert); meldung("Kopiert ✓"); } catch (e) { i.select(); document.execCommand("copy"); meldung("Kopiert ✓"); } }, "klein"));
+    try { await navigator.clipboard.writeText(wert); meldung("Kopiert"); } catch (e) { i.select(); document.execCommand("copy"); meldung("Kopiert"); } }, "klein"));
 }
 V.kurzbefehle = function () {
   const box = h("div", null, h("p", { class: "leise" }, "Lädt …"));
@@ -459,7 +456,7 @@ V.kurzbefehle = function () {
           schritt(3, "Diese Seite am besten auf dem ", b("iPhone"), " offen lassen – dann kannst du die Adressen direkt kopieren.")),
         h("p", { class: "klein leise" }, `Schlüssel erstellt am ${fmtDatum(st.erstellt)}` + (st.benutzt ? ` · zuletzt benutzt ${fmtVor(st.benutzt)}` : " · noch nie benutzt"))),
       h("div", { class: "raster" },
-        h("section", { class: "karte" }, h("h2", null, "🛒 «Familieneinkauf» (Siri)"),
+        h("section", { class: "karte" }, h("h2", null, "«Familieneinkauf» (Siri)"),
           h("p", { class: "klein" }, "«Hey Siri, Familieneinkauf» → Siri fragt «Was brauchst du?» → «Zwei Liter Milch und Katzenstreu»."),
           h("ol", { class: "klein", style: { "padding-left": "1.2rem" } },
             schritt(1, "Oben rechts ", b("+"), " → oben auf den Namen tippen → ", b("Umbenennen"), ": ", b("Familieneinkauf"), "."),
@@ -470,7 +467,7 @@ V.kurzbefehle = function () {
               b("Neues Feld hinzufügen"), " → ", b("Text"), ". Schlüssel: ", b("text"), " – Wert: antippen und oben über der Tastatur ", b("Gefragte Eingabe"), " wählen."),
             schritt(5, "Aktion ", b("Ergebnis anzeigen"), " hinzufügen (sie übernimmt automatisch «Inhalte von URL»). So sagt Siri, was eingetragen wurde."),
             schritt(6, b("Fertig"), " tippen. Testen: Kurzbefehl antippen und «Testmilch» eingeben – dann in Hüsli wieder löschen."))),
-        h("section", { class: "karte" }, h("h2", null, "✅ «Familienaufgabe» (Siri)"),
+        h("section", { class: "karte" }, h("h2", null, "«Familienaufgabe» (Siri)"),
           h("p", { class: "klein" }, "«Hey Siri, Familienaufgabe» → «Was ist zu tun?» → «Steuererklärung machen». Die Aufgabe ist dir zugewiesen und für deinen Haushalt sichtbar."),
           h("ol", { class: "klein", style: { "padding-left": "1.2rem" } },
             schritt(1, "Den Kurzbefehl «Familieneinkauf» lange drücken → ", b("Duplizieren"), ". Den neuen öffnen und umbenennen in ", b("Familienaufgabe"), "."),
@@ -478,7 +475,7 @@ V.kurzbefehle = function () {
             schritt(3, "Bei «Inhalte von URL abrufen» die Adresse ersetzen durch:"),
             kopierFeld(basis + "/aufgabe"),
             schritt(4, "Alles andere bleibt gleich. ", b("Fertig"), "."))),
-        h("section", { class: "karte" }, h("h2", null, "📤 «An Hüsli» (Teilen)"),
+        h("section", { class: "karte" }, h("h2", null, "«An Hüsli» (Teilen)"),
           h("p", { class: "klein" }, "In Notizen, Safari, Mail … auf ", b("Teilen"), " → ", b("An Hüsli"), " → wählen, ob es eine Notiz, Aufgabe oder Einkauf wird. Bei «Einkauf» wird jede Zeile ein Artikel."),
           h("ol", { class: "klein", style: { "padding-left": "1.2rem" } },
             schritt(1, b("+"), " → Name: ", b("An Hüsli"), ". Unten auf ", b("ⓘ"), " (Details) → ", b("Im Share-Sheet anzeigen"), " einschalten → ", b("Fertig"), "."),

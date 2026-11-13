@@ -65,7 +65,10 @@ const ICONS = {
   minus: "M5 12h14",
   wiederholen: "M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4",
 };
+const IC_TEXT = { stift: "Bearbeiten", minus: "−", plus: "+", links: "←", rechts: "→", x: "Schliessen", zurueck: "←",
+  telefon: "Anrufen", mail: "E-Mail", ort: "Karte", drucken: "", import: "", papierkorb: "" };
 function ic(name) {
+  if (name !== "suche") return document.createTextNode(IC_TEXT[name] || "");
   const s = document.createElementNS(SVGNS, "svg");
   s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "ic"); s.setAttribute("aria-hidden", "true");
   const p = document.createElementNS(SVGNS, "path"); p.setAttribute("d", ICONS[name] || ICONS.mehr);
@@ -114,10 +117,12 @@ function aktive() { return S.personen.filter(p => p.aktiv); }
 function menschen() { return aktive().filter(p => p.rolle !== "tier"); }
 function tiere() { return aktive().filter(p => p.rolle === "tier"); }
 function meinHaushalt() { return aktive().filter(p => p.haushalt_id === S.ich.haushalt_id); }
+function initialen(n) {
+  const w = String(n || "?").trim().split(/[\s-]+/).filter(Boolean);
+  return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] || "?").slice(0, 2)).toUpperCase();
+}
 function ava(p, cls = "") {
-  if (!p) return h("span", { class: "ava " + cls, style: { background: "#999" } }, "?");
-  const inhalt = p.emoji && p.emoji !== "🙂" ? p.emoji : (p.name || "?").slice(0, 1).toUpperCase();
-  return h("span", { class: "ava " + cls, title: p.name, style: { background: p.farbe || "#5b7c99" } }, inhalt);
+  return h("span", { class: "ava " + cls, title: p ? p.name : "", "aria-hidden": "true" }, initialen(p ? p.name : "?"));
 }
 function name(id) { const p = person(id); return p ? p.name : "—"; }
 const ROLLE_NAME = { admin: "Admin", erwachsen: "Erwachsen", gast: "Gast", kind: "Kind", tier: "Haustier" };
@@ -157,7 +162,7 @@ async function entfernen(id, text) {
 async function abhaken(e) {
   const vorher = e.datum;
   const n = await aendern(e.id, { erledigt: !e.erledigt });
-  if (e.daten.wiederholung && !e.erledigt && n.datum !== vorher) meldung(`Erledigt ✓ Nächstes Mal: ${fmtRelativ(n.datum)}` +
+  if (e.daten.wiederholung && !e.erledigt && n.datum !== vorher) meldung(`Erledigt. Nächstes Mal: ${fmtRelativ(n.datum)}` +
     (n.zugewiesen_id && n.zugewiesen_id !== e.zugewiesen_id ? ` (${name(n.zugewiesen_id)})` : ""));
 }
 
@@ -183,7 +188,7 @@ function dialog(titel, inhalt, knoepfe = [], opt = {}) {
       const b = form.querySelector("button[type=submit]"); if (b) b.disabled = true;
       try { if ((await k.tun(schliessen)) !== false) schliessen(); } catch (e) { console.error(e); } finally { if (b) b.disabled = false; }
     } },
-    h("div", { class: "dialog-kopf" }, h("h2", null, titel), h("button", { class: "knopf rund klein", type: "button", "aria-label": "Schliessen", onclick: schliessen }, ic("x"))),
+    h("div", { class: "dialog-kopf" }, h("h2", null, titel), h("button", { class: "link", type: "button", onclick: schliessen }, "Schliessen")),
     inhalt, knoepfe.length ? fuss : null);
   const s = h("div", { class: "schleier", onmousedown: ev => { if (ev.target === s) s._z = 1; }, onclick: ev => { if (ev.target === s && s._z) schliessen(); } }, form);
   document.body.append(s); offeneDialoge++; document.addEventListener("keydown", esc);
@@ -192,7 +197,7 @@ function dialog(titel, inhalt, knoepfe = [], opt = {}) {
   return schliessen;
 }
 function bestaetigen(text, knopf = "Löschen") {
-  return new Promise(res => dialog("Sicher?", h("p", null, text), [
+  return new Promise(res => dialog(knopf + "?", h("p", null, text), [
     { text: "Abbrechen", tun: () => res(false) }, { text: knopf, art: "gefahr", tun: () => res(true) }], { zu: () => res(false) }));
 }
 
@@ -230,12 +235,9 @@ function feldElement(f, start) {
     case "personen": {
       const gewaehlt = new Set(v || []);
       const wahl = typeof f.optionen === "function" ? f.optionen() : f.optionen;
-      const box = h("div", { class: "chips" }, wahl.map(p => {
-        const c = h("button", { type: "button", class: "chip" + (gewaehlt.has(p.id) ? " an" : ""), onclick: () => {
-          gewaehlt.has(p.id) ? gewaehlt.delete(p.id) : gewaehlt.add(p.id); c.classList.toggle("an"); if (f.wechsel) f.wechsel([...gewaehlt]); } },
-          ava(p, "mini"), p.name);
-        return c;
-      }));
+      const box = h("div", { class: "auswahl-liste" }, wahl.map(p => h("label", { class: "haken" },
+        h("input", { type: "checkbox", checked: gewaehlt.has(p.id), onchange: ev => {
+          ev.target.checked ? gewaehlt.add(p.id) : gewaehlt.delete(p.id); if (f.wechsel) f.wechsel([...gewaehlt]); } }), p.name)));
       const lab = h("div", { class: "feld" }, h("span", null, f.text), box); lab._wert = () => [...gewaehlt]; return lab;
     }
     case "sicht": return sichtFeld(v || {});
@@ -258,21 +260,18 @@ function sichtFeld(v) {
   let sicht = v.sicht || "haushalt";
   const freigabe = new Set(v.freigabe || []);
   const seg = h("div", { class: "segment" });
-  const chips = h("div", { class: "chips" }, menschen().filter(p => p.id !== S.ich.id && mitLogin(p)).map(p => {
-    const c = h("button", { type: "button", class: "chip" + (freigabe.has(p.id) ? " an" : ""), onclick: () => {
-      freigabe.has(p.id) ? freigabe.delete(p.id) : freigabe.add(p.id); c.classList.toggle("an"); } }, ava(p, "mini"), p.name);
-    return c;
-  }));
-  const chipBox = h("div", { style: { "margin-top": "8px" } }, chips);
+  const chips = h("div", { class: "auswahl-liste" }, menschen().filter(p => p.id !== S.ich.id && mitLogin(p)).map(p => h("label", { class: "haken" },
+    h("input", { type: "checkbox", checked: freigabe.has(p.id), onchange: ev => { ev.target.checked ? freigabe.add(p.id) : freigabe.delete(p.id); } }), p.name)));
+  const chipBox = h("div", { class: "unter-feld" }, chips);
   const zeichnen = () => {
-    seg.replaceChildren(...Object.entries(SICHT_NAME).map(([k, t]) => h("button", { type: "button", class: sicht === k ? "an" : "",
+    seg.replaceChildren(...Object.entries(SICHT_NAME).map(([k, t]) => h("button", { type: "button", class: sicht === k ? "an" : "", "aria-pressed": sicht === k ? "true" : "false",
       onclick: () => { sicht = k; zeichnen(); } }, t)));
     chipBox.classList.toggle("versteckt", sicht !== "personen");
   };
   zeichnen();
   const hh = haushalt(S.ich.haushalt_id);
   const lab = h("div", { class: "feld" }, h("span", null, "Wer sieht das?"), seg, chipBox,
-    h("span", { class: "klein leise" }, v.hinweis || (hh ? `Haushalt: ${hh.name}` : "")));
+    h("span", { class: "hilfe" }, v.hinweis || (hh ? `Haushalt: ${hh.name}` : "")));
   lab._wert = () => ({ sicht, freigabe: [...freigabe] });
   return lab;
 }
@@ -296,7 +295,7 @@ function formular(titel, felder, start, speichern, extra = {}) {
   if (extra.loeschen) knoepfe.push({ text: "Löschen", art: "gefahr", links: true, tun: async zu => { zu(); await extra.loeschen(); return false; } });
   if (extra.knoepfe) knoepfe.push(...extra.knoepfe);
   knoepfe.push({ text: "Abbrechen", tun: () => true });
-  knoepfe.push({ text: extra.speichernText || "Speichern", art: "haupt", haupt: true, tun: async () => {
+  knoepfe.push({ text: extra.speichernText || "Sichern", art: "haupt", haupt: true, tun: async () => {
     const res = { daten: {} };
     for (const [f, el] of els) {
       const w = el._wert();
@@ -377,24 +376,24 @@ function zeichnen() {
   if (!S.ich) return zeigeAnmeldung();
   aktuelleRoute = location.hash;
   const sichtbar = navSichtbar();
-  const nav = h("nav", { class: "nav" }, sichtbar.map(n => n.trenner ? h("div", { class: "trenner" }) :
-    h("a", { href: n.p, class: n.k === r.name ? "aktiv" : "" }, ic(n.i), n.n, n.k === "hinweise" && S.hinweise ? h("span", { class: "zahl" }, S.hinweise) : null)));
-  const seite = h("aside", { class: "seite" }, h("a", { class: "marke", href: "#/" }, h("img", { src: "/familie/icon.svg", alt: "" }), "Hüsli"), nav,
-    h("div", { class: "trenner" }), h("div", { class: "klein leise", style: { padding: "8px 10px" } }, ava(S.ich, "mini"), " ", S.ich.name));
-  const leiste = h("nav", { class: "leiste" }, leisteWahl().map(k => NAV.find(n => n.k === k)).filter(Boolean).map(n =>
-    h("a", { href: n.p, class: n.k === r.name ? "aktiv" : "" }, ic(n.i), n.n)),
-    h("a", { href: "#/mehr", class: r.name === "mehr" ? "aktiv" : "" }, ic("mehr"), "Mehr", S.hinweise ? h("span", { class: "punkt" }) : null));
+  const ziel = n => h("a", { href: n.p, class: n.k === r.name ? "aktiv" : "", "aria-current": n.k === r.name ? "page" : null }, n.n,
+    n.k === "hinweise" && S.hinweise ? h("span", { class: "zaehler" }, ` (${S.hinweise > 99 ? "99+" : S.hinweise})`) : null);
+  const nav = h("nav", { class: "nav", "aria-label": "Bereiche" }, sichtbar.map(n => n.trenner ? h("div", { class: "trenner" }) : ziel(n)));
+  const seite = h("aside", { class: "seite" }, h("a", { class: "marke", href: "#/" }, "Hüsli"), nav,
+    h("div", { class: "seite-fuss" }, h("span", { class: "etikett" }, "Angemeldet als " + S.ich.name)));
+  const leiste = h("header", { class: "leiste" }, h("a", { class: "marke", href: "#/" }, "Hüsli"),
+    h("nav", { class: "leiste-ziele", "aria-label": "Bereiche" }, leisteWahl().map(k => NAV.find(n => n.k === k)).filter(Boolean).map(ziel),
+      h("a", { href: "#/mehr", class: r.name === "mehr" ? "aktiv" : "", "aria-current": r.name === "mehr" ? "page" : null }, "Mehr",
+        S.hinweise ? h("span", { class: "zaehler" }, ` (${S.hinweise > 99 ? "99+" : S.hinweise})`) : null)));
   const inhalt = h("main", { class: "inhalt", id: "inhalt" });
   let ansicht;
   const fn = V[r.name];
   const navEintrag = NAV.find(n => n.k === r.name);
-  if (!fn || (navEintrag && navEintrag.m && !S.module.includes(navEintrag.m))) ansicht = h("div", { class: "leer" }, h("span", { class: "gross" }, "🧭"), "Diese Seite gibt es nicht (oder das Modul ist ausgeschaltet).");
+  if (!fn || (navEintrag && navEintrag.m && !S.module.includes(navEintrag.m))) ansicht = leer("", "Diese Seite gibt es nicht. Vielleicht ist das Modul ausgeschaltet – das lässt sich unter Module ändern.");
   else { try { ansicht = fn(r.args, r.q); } catch (e) { console.error(e); ansicht = h("div", { class: "leer" }, "Fehler beim Anzeigen: " + e.message); } }
   inhalt.append(ansicht);
-  const plusFn = ansicht && ansicht._plus;
-  const plus = plusFn ? h("button", { class: "plus", "aria-label": "Neu", onclick: plusFn }, ic("plus")) : null;
   const y = window.scrollY, gleich = app.dataset.route === location.hash;
-  app.replaceChildren(h("div", { class: "rahmen" }, seite, inhalt), leiste, plus || "");
+  app.replaceChildren(leiste, h("div", { class: "rahmen" }, seite, inhalt));
   app.dataset.route = location.hash;
   if (gleich) window.scrollTo(0, y); else window.scrollTo(0, 0);
   document.title = (navEintrag ? navEintrag.n + " · " : "") + "Hüsli";
@@ -403,13 +402,27 @@ let zeichnenGeplant = false;
 function neuZeichnen() { if (zeichnenGeplant) return; zeichnenGeplant = true; requestAnimationFrame(() => { zeichnenGeplant = false; if (S.ich) zeichnen(); }); }
 
 /* Seitenkopf mit Titel und Knöpfen */
-function kopf(titel, knoepfe = [], zurueck) {
-  return h("div", null, zurueck ? h("a", { class: "zurueck", href: zurueck[0] }, ic("zurueck"), zurueck[1]) : null,
-    h("div", { class: "kopf" }, h("h1", null, titel), h("div", { class: "rechts" }, knoepfe)));
+function kopf(titel, knoepfe = [], zurueck, untertitel) {
+  return h("div", { class: "seitenkopf" }, zurueck ? h("a", { class: "zurueck", href: zurueck[0] }, "← " + zurueck[1]) : null,
+    h("div", { class: "kopf" }, h("div", { class: "kopf-text" }, h("h1", null, titel), untertitel ? h("div", { class: "untertitel" }, untertitel) : null),
+      h("div", { class: "rechts" }, knoepfe)));
 }
-function knopf(text, tun, art = "", icon) { return h("button", { class: "knopf " + art, type: "button", onclick: tun }, icon ? ic(icon) : null, text); }
-function neuKnopf(text, tun) { return h("button", { class: "knopf haupt nur-gross", type: "button", onclick: tun }, ic("plus"), text); }
-function leer(emoji, text, knopfEl) { return h("div", { class: "leer" }, h("span", { class: "gross" }, emoji), text, knopfEl ? h("div", { style: { "margin-top": "10px" } }, knopfEl) : null); }
+function knopf(text, tun, art = "", icon) {
+  art = art.replace(/\brund\b/, "").trim();
+  return h("button", { class: "knopf " + art, type: "button", onclick: tun }, text || (icon ? ic(icon) : ""));
+}
+const NEU_TEXT = { Aufgabe: "Aufgabe eintragen", Termin: "Termin eintragen", Liste: "Liste anlegen", Kasse: "Kasse anlegen", Ausgabe: "Ausgabe eintragen",
+  Projekt: "Projekt anlegen", Notiz: "Notiz schreiben", Rezept: "Rezept eintragen", Kontakt: "Kontakt eintragen", Geburtstag: "Geburtstag eintragen",
+  Vorrat: "Vorrat eintragen", Gegenstand: "Gegenstand eintragen", Fahrzeug: "Fahrzeug eintragen", Eintrag: "Eintrag machen", Haustier: "Haustier eintragen",
+  Person: "Person hinzufügen", "Kind / Tier": "Kind oder Tier hinzufügen" };
+function neuKnopf(text, tun) { return h("button", { class: "knopf haupt", type: "button", onclick: tun }, NEU_TEXT[text] || text); }
+function leer(_, text, knopfEl) {
+  const m = String(text).match(/^(.+?[.?])\s+(.*)$/);
+  const titel = m ? m[1] : text, rest = m ? m[2] : "";
+  if (knopfEl && knopfEl.classList) { knopfEl.classList.remove("haupt"); knopfEl.classList.add("link"); }
+  return h("div", { class: "leer" }, h("div", { class: "leer-titel" }, titel), rest ? h("div", { class: "leer-text" }, rest) : null,
+    knopfEl ? h("div", { class: "leer-aktion" }, knopfEl) : null);
+}
 function seite(...kinder) { const d = h("div", null, ...kinder); return d; }
 function mitPlus(el, fn) { el._plus = fn; return el; }
 function suchfeld(wert, beiEingabe, platz = "Suchen …") {
@@ -417,15 +430,15 @@ function suchfeld(wert, beiEingabe, platz = "Suchen …") {
   return h("div", { class: "suche" }, ic("suche"), i);
 }
 function sichtEtikett(e) {
-  if (e.sicht === "privat") return h("span", { class: "etikett", title: "Nur für dich" }, "🔒 privat");
-  if (e.sicht === "familie") return h("span", { class: "etikett", title: "Ganze Familie" }, "👪 Familie");
-  if (e.sicht === "personen") return h("span", { class: "etikett", title: e.freigabe.map(name).join(", ") }, "👥 " + (e.freigabe.length + 1));
-  if (e.haushalt_id !== S.ich.haushalt_id) { const hh = haushalt(e.haushalt_id); return h("span", { class: "etikett" }, (hh ? hh.emoji + " " + hh.name : "anderer Haushalt")); }
+  if (e.sicht === "privat") return h("span", { class: "etikett", title: "Nur für dich" }, "privat");
+  if (e.sicht === "familie") return h("span", { class: "etikett", title: "Ganze Familie" }, "Familie");
+  if (e.sicht === "personen") return h("span", { class: "etikett", title: e.freigabe.map(name).join(", ") }, (e.freigabe.length + 1) + " Personen");
+  if (e.haushalt_id !== S.ich.haushalt_id) { const hh = haushalt(e.haushalt_id); return h("span", { class: "etikett" }, (hh ? hh.name : "anderer Haushalt")); }
   return null;
 }
-function checkKnopf(an, tun, eckig) {
-  return h("button", { class: "check" + (an ? " an" : "") + (eckig ? " eckig" : ""), type: "button", "aria-label": an ? "Wieder öffnen" : "Erledigt",
-    onclick: ev => { ev.stopPropagation(); tun(); } }, an ? ic("haken") : null);
+function checkKnopf(an, tun) {
+  const cb = h("input", { type: "checkbox", checked: !!an, "aria-label": an ? "Wieder öffnen" : "Als erledigt markieren", onchange: () => tun() });
+  return h("label", { class: "check", onclick: ev => ev.stopPropagation() }, cb);
 }
 
 /* ---------- Anmeldung ---------- */
@@ -444,12 +457,12 @@ function zeigeAnmeldung() {
       await start();
     } catch (e) { fehler.textContent = "Keine Verbindung. Ist Tailscale an?"; }
   } },
-    h("div", { class: "marke" }, h("img", { src: "/familie/icon.svg", alt: "" }), "Hüsli"),
-    h("p", { class: "leise", style: { "text-align": "center", "margin-top": "0" } }, "Unser Familien-Organizer"),
+    h("h1", { class: "anmelde-titel" }, "Hüsli"),
+    h("div", { class: "untertitel" }, "Familien-Organizer · nur im Tailnet"),
     h("label", { class: "feld" }, h("span", null, "Name"), login),
     h("label", { class: "feld" }, h("span", null, "Passwort"), pw), fehler,
     h("button", { class: "knopf haupt", style: { width: "100%" } }, "Anmelden"),
-    h("p", { class: "klein leise", style: { "text-align": "center" } }, "Noch kein Zugang? Alfred schickt dir einen Einladungslink."));
+    h("p", { class: "hilfe" }, "Noch kein Zugang? Alfred schickt dir einen Einladungslink."));
   app.replaceChildren(h("div", { class: "anmeldung" }, form));
   document.querySelector(".leiste")?.remove();
 }
@@ -470,8 +483,8 @@ async function zeigeEinladung(code) {
     const d = await r.json();
     if (!r.ok) { fehler.textContent = d.fehler; return; }
     location.hash = "#/"; await start();
-  } }, h("div", { class: "marke" }, h("img", { src: "/familie/icon.svg", alt: "" }), "Hüsli"),
-    h("h2", null, `Willkommen, ${info.name}!`),
+  } }, h("h1", { class: "anmelde-titel" }, "Hüsli"),
+    h("h2", null, `Willkommen, ${info.name}`),
     h("p", { class: "leise" }, "Dein Anmeldename ist ", h("b", null, info.login), ". Wähle jetzt ein Passwort (mindestens 8 Zeichen)."),
     h("input", { type: "text", autocomplete: "username", value: info.login, class: "versteckt", readonly: true }),
     h("label", { class: "feld" }, h("span", null, "Passwort"), pw), h("label", { class: "feld" }, h("span", null, "Nochmals"), pw2), fehler,
@@ -479,7 +492,10 @@ async function zeigeEinladung(code) {
 }
 
 /* ---------- Start ---------- */
-function thema() { const t = localStorage.getItem("huesli-thema"); if (t) document.documentElement.dataset.thema = t; else delete document.documentElement.dataset.thema; }
+function thema() {
+  const t = localStorage.getItem("huesli-thema");
+  if (t === "hell" || t === "dunkel") document.documentElement.dataset.theme = t === "hell" ? "light" : "dark"; else delete document.documentElement.dataset.theme;
+}
 async function start() {
   thema();
   if (route().name === "einladung") return zeichnen();

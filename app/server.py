@@ -346,44 +346,44 @@ def hinweise_erzeugen():
                     tage = (n - h).days
                     alter = f" ({n.year - jahr})" if jahr else ""
                     if tage == 0:
-                        hinweis(ich["id"], f"geb0:{name}:{n.year}", f"🎂 Heute hat {name} Geburtstag{alter}!", link, "geburtstag")
+                        hinweis(ich["id"], f"geb0:{name}:{n.year}", f"Heute hat {name} Geburtstag{alter}.", link, "geburtstag")
                     elif tage == 7:
-                        hinweis(ich["id"], f"geb7:{name}:{n.year}", f"🎁 In einer Woche: Geburtstag von {name}{alter}", link, "geburtstag")
+                        hinweis(ich["id"], f"geb7:{name}:{n.year}", f"In einer Woche hat {name} Geburtstag{alter}.", link, "geburtstag")
             if "kalender" in mods:
                 for e in sichtbare(ich, ["termin"]):
                     d = datum_parse(e["datum"])
                     if d == h and (e["daten"].get("wer") in (None, [], "") or ich["id"] in (e["daten"].get("wer") or [])):
                         zeit = e["datum"][11:16] if len(e["datum"] or "") > 10 else ""
-                        hinweis(ich["id"], f"termin:{e['id']}:{h}", f"📅 Heute {zeit + ' ' if zeit else ''}{e['titel']}",
+                        hinweis(ich["id"], f"termin:{e['id']}:{h}", f"Heute {zeit + ' ' if zeit else ''}{e['titel']}",
                                 "#/kalender", "termin")
             if "fahrzeuge" in mods:
                 for e in sichtbare(ich, ["fahrzeug"]):
                     for feld, text in (("mfk", "MFK"), ("service", "Service"), ("versicherung", "Versicherung")):
                         d = datum_parse(e["daten"].get(feld))
                         if d and 0 <= (d - h).days <= 30:
-                            hinweis(ich["id"], f"fz:{e['id']}:{feld}:{d}", f"🚗 {e['titel']}: {text} am {d.strftime('%d.%m.%Y')}",
+                            hinweis(ich["id"], f"fz:{e['id']}:{feld}:{d}", f"{e['titel']}: {text} am {d.strftime('%d.%m.%Y')}",
                                     "#/fahrzeuge", "fahrzeug")
                     if h.month in (4, 10) and h.day == 1:
-                        hinweis(ich["id"], f"reifen:{e['id']}:{h}", f"🛞 {e['titel']}: Reifenwechsel planen (O bis O)",
+                        hinweis(ich["id"], f"reifen:{e['id']}:{h}", f"{e['titel']}: Reifenwechsel planen (O bis O)",
                                 "#/fahrzeuge", "fahrzeug")
             if "haustiere" in mods:
                 for e in sichtbare(ich, ["tier_eintrag"]):
                     d = datum_parse(e["daten"].get("naechstes"))
                     if d and 0 <= (d - h).days <= 7 and not e["erledigt"]:
-                        hinweis(ich["id"], f"tier:{e['id']}:{d}", f"🐾 {e['titel']} fällig am {d.strftime('%d.%m.%Y')}",
+                        hinweis(ich["id"], f"tier:{e['id']}:{d}", f"{e['titel']} fällig am {d.strftime('%d.%m.%Y')}",
                                 "#/haustiere", "tier")
             if "vorrat" in mods:
                 for e in sichtbare(ich, ["vorrat"]):
                     d = datum_parse(e["daten"].get("ablauf"))
                     if d and 0 <= (d - h).days <= 7:
-                        hinweis(ich["id"], f"ablauf:{e['id']}:{d}", f"⏳ {e['titel']} läuft ab am {d.strftime('%d.%m.%Y')}",
+                        hinweis(ich["id"], f"ablauf:{e['id']}:{d}", f"{e['titel']} läuft ab am {d.strftime('%d.%m.%Y')}",
                                 "#/vorrat", "vorrat")
                     try:
                         menge, mind = float(e["daten"].get("menge") or 0), float(e["daten"].get("mindestens") or 0)
                     except (TypeError, ValueError):
                         continue
                     if mind and menge < mind:
-                        hinweis(ich["id"], f"knapp:{e['id']}:{h.isocalendar()[1]}", f"📦 Knapp: {e['titel']} ({menge:g} / {mind:g})",
+                        hinweis(ich["id"], f"knapp:{e['id']}:{h.isocalendar()[1]}", f"Knapp: {e['titel']} ({menge:g} / {mind:g})",
                                 "#/vorrat", "vorrat")
 
 
@@ -403,7 +403,7 @@ def telegram_morgen():
                         (p["id"],)).fetchall()
         if not neu:
             continue
-        text = "🏠 Hüsli – heute\n\n" + "\n".join("• " + r["text"] for r in neu)
+        text = "Hüsli – heute\n\n" + "\n".join("· " + r["text"] for r in neu)
         try:
             urllib.request.urlopen(urllib.request.Request(
                 f"https://api.telegram.org/bot{tok}/sendMessage",
@@ -494,10 +494,10 @@ def ical(ich):
     if "aufgaben" in mods:
         for e in sichtbare(ich, ["aufgabe"]):
             if not e["erledigt"] and e["datum"]:
-                ev(f"a{e['id']}", "☐ " + e["titel"], e["datum"][:10])
+                ev(f"a{e['id']}", "Aufgabe: " + e["titel"], e["datum"][:10])
     if "geburtstage" in mods:
         for i, (name, d, jahr, _) in enumerate(geburtstage_fuer(ich)):
-            ev(f"g{i}-{name}", f"🎂 {name}", d.isoformat(), rrule="FREQ=YEARLY")
+            ev(f"g{i}-{name}", f"Geburtstag {name}", d.isoformat(), rrule="FREQ=YEARLY")
     z.append("END:VCALENDAR")
     return "\r\n".join(z) + "\r\n"
 
@@ -539,7 +539,7 @@ def aktivitaet(ich, eintrag_id, aktion):
 def zuweisung_melden(ich, e):
     z = e.get("zugewiesen_id")
     if z and z != ich["id"]:
-        hinweis(z, f"zu:{e['id']}:{time.time():.0f}", f"👉 {ich['name']} hat dir zugewiesen: {e['titel']}",
+        hinweis(z, f"zu:{e['id']}:{time.time():.0f}", f"{ich['name']} hat dir zugewiesen: {e['titel']}",
                 "#/aufgaben" if e["typ"] == "aufgabe" else "#/", "zuweisung")
 
 

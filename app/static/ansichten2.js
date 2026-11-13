@@ -8,8 +8,7 @@ FORMULARE.notiz = {
   felder: () => [
     { key: "titel", text: "Titel", platz: "optional" },
     { key: "d.text", text: "Text", art: "textarea", zeilen: 10, platz: "Text … Checkliste mit «[ ] Punkt» pro Zeile" },
-    { key: "d.farbe", text: "Farbe", art: "auswahl", optionen: NOTIZ_FARBEN, halb: true },
-    { key: "d.angeheftet", text: "Oben anheften", art: "haken", halb: true },
+    { key: "d.angeheftet", text: "Oben anheften", art: "haken" },
   ],
   vorher: res => { if (!res.titel && !res.daten.text) throw meldung("Leere Notiz"); },
 };
@@ -36,10 +35,10 @@ V.notizen = function (args, q) {
   xs.sort((a, b) => (b.daten.angeheftet ? 1 : 0) - (a.daten.angeheftet ? 1 : 0) || (b.geaendert > a.geaendert ? 1 : -1));
   const sf = suchfeld(such, v => { clearTimeout(sf._t); sf._t = setTimeout(() => { history.replaceState(null, "", "#/notizen?s=" + encodeURIComponent(v)); neuZeichnen(); setTimeout(() => { const i = document.querySelector(".suche input"); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } }, 30); }, 250); }, "Notizen durchsuchen");
   return mitPlus(seite(kopf("Notizen", [neuKnopf("Notiz", () => bearbeiten("notiz"))]), sf,
-    xs.length ? h("div", { class: "notizen" }, xs.map(e => h("div", { class: "karte" + (e.daten.farbe ? " notiz-farbe-" + e.daten.farbe : ""), onclick: () => bearbeiten("notiz", e) },
-      h("div", { class: "karte-kopf" }, e.daten.angeheftet ? "📌" : null, h("h3", { style: { margin: 0 } }, e.titel || ""), h("span", { class: "rechts" }, sichtEtikett(e))),
+    xs.length ? h("div", { class: "notizen" }, xs.map(e => h("div", { class: "karte notiz", onclick: () => bearbeiten("notiz", e) },
+      h("div", { class: "karte-kopf" }, h("h3", null, e.titel || ""), e.daten.angeheftet ? h("span", { class: "etikett" }, "angeheftet") : null, h("span", { class: "rechts" }, sichtEtikett(e))),
       notizText(e, true), h("div", { class: "klein leise", style: { "margin-top": "8px" } }, `${name(e.geaendert_von || e.besitzer_id)} · ${fmtVor(e.geaendert)}`))))
-      : leer("📝", such ? "Nichts gefunden." : "Noch keine Notizen. Ideal für WLAN-Passwort, Katzensitter-Infos, Packlisten …")), () => bearbeiten("notiz"));
+      : leer("", such ? "Nichts gefunden." : "Noch keine Notizen. Ideal für WLAN-Passwort, Katzensitter-Infos, Packlisten …")), () => bearbeiten("notiz"));
 };
 
 /* ---------- Rezepte ---------- */
@@ -49,7 +48,6 @@ FORMULARE.rezept = {
     { key: "titel", text: "Name", pflicht: true },
     { key: "d.portionen", text: "Portionen", art: "zahl", std: 4, halb: true },
     { key: "d.dauer", text: "Dauer (Min.)", art: "zahl", halb: true },
-    { key: "d.emoji", text: "Symbol", platz: "🍲", halb: true, max: 8 },
     { key: "d.tags", text: "Stichworte", platz: "vegi, schnell, Znacht", halb: true },
     { key: "d.zutaten", text: "Zutaten (eine pro Zeile, Menge zuerst)", art: "textarea", zeilen: 8, platz: "500 g Teigwaren\n2 Zwiebeln\n1 dl Rahm" },
     { key: "d.zubereitung", text: "Zubereitung (Schritte durch Leerzeile oder Zeile trennen)", art: "textarea", zeilen: 8 },
@@ -89,27 +87,29 @@ V.rezepte = function (args, q) {
   if (tag) xs = xs.filter(r => String(r.daten.tags || "").split(",").map(t => t.trim()).includes(tag));
   const sf = suchfeld(such, v => { clearTimeout(sf._t); sf._t = setTimeout(() => { history.replaceState(null, "", "#/rezepte?s=" + encodeURIComponent(v)); neuZeichnen(); setTimeout(() => { const i = document.querySelector(".suche input"); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } }, 30); }, 250); }, "Rezept oder Zutat suchen");
   return mitPlus(seite(kopf("Rezepte", [neuKnopf("Rezept", () => bearbeiten("rezept"))]), tabs, sf,
-    alleTags.length ? h("div", { class: "chips", style: { "margin-bottom": "14px" } }, alleTags.map(t => h("button", { class: "chip" + (t === tag ? " an" : ""), onclick: () => location.hash = "#/rezepte" + (t === tag ? "" : "?tag=" + encodeURIComponent(t)) }, t))) : null,
+    alleTags.length ? h("label", { class: "feld filter" }, h("span", null, "Stichwort"),
+      (() => { const sel = h("select", { class: "eingabe", onchange: () => location.hash = "#/rezepte" + (sel.value ? "?tag=" + encodeURIComponent(sel.value) : "") },
+        h("option", { value: "" }, "Alle"), alleTags.map(t => h("option", { value: t }, t))); sel.value = tag; return sel; })()) : null,
     xs.length ? h("div", { class: "raster eng" }, xs.map(r => h("a", { class: "karte rezept-karte", href: "#/rezepte/" + r.id, style: { color: "var(--text)" } },
-      h("div", { class: "bild" }, r.daten.emoji || "🍲"), h("h3", null, r.titel),
+      h("h3", null, r.titel),
       h("div", { class: "klein leise" }, [r.daten.dauer ? r.daten.dauer + " Min." : null, r.daten.portionen ? r.daten.portionen + " Port." : null, r.daten.tags].filter(Boolean).join(" · ")))))
-      : leer("🍲", "Noch keine Rezepte. Familienrezepte von Mama, Lieblingsgerichte …")), () => bearbeiten("rezept"));
+      : leer("", "Noch keine Rezepte. Familienrezepte von Mama, Lieblingsgerichte …")), () => bearbeiten("rezept"));
 };
 function rezeptDetail(id, q) {
   const r = S.E.get(id);
-  if (!r) return leer("🤷", "Rezept nicht gefunden.");
+  if (!r) return leer("", "Rezept nicht gefunden.");
   const basis = zahl(r.daten.portionen) || 4;
   const port = Number(q.get("p")) || basis;
   const faktor = port / basis;
   const zutaten = String(r.daten.zutaten || "").split("\n").map(z => z.trim()).filter(Boolean);
   const schritte = String(r.daten.zubereitung || "").split(/\n\s*\n|\n(?=\d+[.)]\s)/).map(s => s.replace(/^\d+[.)]\s*/, "").trim()).filter(Boolean);
   const setzeP = p => location.hash = `#/rezepte/${id}?p=${Math.max(1, p)}`;
-  return seite(kopf((r.daten.emoji || "🍲") + " " + r.titel, [knopf("In Menüplan", () => bearbeiten("menu", null, { daten: { rezept_id: id } })),
+  return seite(kopf(r.titel, [knopf("In Menüplan", () => bearbeiten("menu", null, { daten: { rezept_id: id } })),
     knopf("", () => bearbeiten("rezept", r), "rund", "stift")], ["#/rezepte", "Rezepte"]),
-    h("div", { class: "leise", style: { "margin-bottom": "14px" } }, [r.daten.dauer ? "⏱ " + r.daten.dauer + " Min." : null, r.daten.tags, r.daten.quelle ? h("a", { href: /^https?:/.test(r.daten.quelle) ? r.daten.quelle : null, target: "_blank", rel: "noopener" }, "Quelle") : null].filter(Boolean).flatMap((x, i) => i ? [" · ", x] : [x])),
+    h("div", { class: "leise", style: { "margin-bottom": "14px" } }, [r.daten.dauer ? r.daten.dauer + " Min." : null, r.daten.tags, r.daten.quelle ? h("a", { href: /^https?:/.test(r.daten.quelle) ? r.daten.quelle : null, target: "_blank", rel: "noopener" }, "Quelle") : null].filter(Boolean).flatMap((x, i) => i ? [" · ", x] : [x])),
     h("div", { class: "zwei" }, h("div", { class: "karte" }, h("h2", null, "Zubereitung"),
       schritte.length ? h("ol", { class: "schritte" }, schritte.map(s => h("li", { style: { "white-space": "pre-wrap" } }, s))) : h("p", { class: "leise" }, "Noch keine Schritte."),
-      r.daten.notiz ? h("p", { class: "klein", style: { "white-space": "pre-wrap", background: "var(--gelb-hell)", padding: "8px 10px", "border-radius": "8px" } }, "💬 " + r.daten.notiz) : null),
+      r.daten.notiz ? h("p", { class: "klein", style: { "white-space": "pre-wrap", background: "var(--gelb-hell)", padding: "8px 10px", "border-radius": "8px" } }, r.daten.notiz) : null),
       h("div", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Zutaten"), h("span", { class: "rechts", style: { display: "flex", gap: "6px", "align-items": "center" } },
         h("button", { class: "knopf rund klein", "aria-label": "Weniger", onclick: () => setzeP(port - 1) }, ic("minus")), h("b", null, port + " Port."), h("button", { class: "knopf rund klein", "aria-label": "Mehr", onclick: () => setzeP(port + 1) }, ic("plus")))),
         h("ul", { class: "liste zutaten" }, zutaten.map(z => h("li", null, zutatSkalieren(z, faktor)))),
@@ -142,7 +142,7 @@ function menuPlan(q, tabs) {
         h("button", { class: "link", style: { "margin-left": "auto" }, "aria-label": "Gericht planen", onclick: () => bearbeiten("menu", null, { datum: ti }) }, "+")),
         es.map(e => h("div", { class: "zeile klickbar", style: { padding: "4px 2px" }, onclick: () => e.daten.rezept_id && S.E.get(e.daten.rezept_id) ? location.hash = "#/rezepte/" + e.daten.rezept_id : bearbeiten("menu", e) },
           h("span", { class: "haupt" }, h("span", { class: "titel klein" }, menuTitel(e)), h("span", { class: "unter" }, { morgen: "Zmorge", mittag: "Zmittag", abend: "Znacht" }[e.daten.mahlzeit || "abend"])),
-          h("button", { class: "link klein", "aria-label": "Bearbeiten", onclick: ev => { ev.stopPropagation(); bearbeiten("menu", e); } }, "✎")))); }))), () => bearbeiten("menu"));
+          h("button", { class: "link klein", "aria-label": "Bearbeiten", onclick: ev => { ev.stopPropagation(); bearbeiten("menu", e); } }, "Ändern")))); }))), () => bearbeiten("menu"));
 }
 
 /* ---------- Kontakte ---------- */
@@ -168,14 +168,14 @@ V.kontakte = function (args, q) {
   for (const e of xs) (nach[e.daten.kategorie || "Sonstiges"] = nach[e.daten.kategorie || "Sonstiges"] || []).push(e);
   const sf = suchfeld(such, v => { clearTimeout(sf._t); sf._t = setTimeout(() => { history.replaceState(null, "", "#/kontakte?s=" + encodeURIComponent(v)); neuZeichnen(); setTimeout(() => { const i = document.querySelector(".suche input"); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } }, 30); }, 250); }, "Name, Praxis, Telefon …");
   return mitPlus(seite(kopf("Kontakte", [neuKnopf("Kontakt", () => bearbeiten("kontakt"))]), sf,
-    xs.length ? KONTAKT_KAT.filter(k => nach[k]).map(k => [h("div", { class: "gruppe-titel" }, (k === "Notfall" ? "🚨 " : "") + k),
+    xs.length ? KONTAKT_KAT.filter(k => nach[k]).map(k => [h("div", { class: "gruppe-titel" }, k),
       h("ul", { class: "liste karte knapp" }, nach[k].map(e => h("li", { class: "zeile klickbar", onclick: () => bearbeiten("kontakt", e) },
         h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel), h("span", { class: "unter" }, [e.daten.firma, e.daten.telefon].filter(Boolean).join(" · "))),
         h("span", { class: "rechts" }, sichtEtikett(e),
           e.daten.telefon ? h("a", { class: "knopf rund klein", href: "tel:" + e.daten.telefon.replace(/[^\d+]/g, ""), "aria-label": "Anrufen", onclick: ev => ev.stopPropagation() }, ic("telefon")) : null,
           e.daten.email ? h("a", { class: "knopf rund klein", href: "mailto:" + e.daten.email, "aria-label": "E-Mail", onclick: ev => ev.stopPropagation() }, ic("mail")) : null,
           e.daten.adresse ? h("a", { class: "knopf rund klein", href: "https://maps.apple.com/?q=" + encodeURIComponent(e.daten.adresse), target: "_blank", rel: "noopener", "aria-label": "Karte", onclick: ev => ev.stopPropagation() }, ic("ort")) : null))))])
-      : leer("📇", such ? "Nichts gefunden." : "Noch keine Kontakte. Tipp: Kinderarzt, Tierarzt, Notfallnummern zuerst.")), () => bearbeiten("kontakt"));
+      : leer("", such ? "Nichts gefunden." : "Noch keine Kontakte. Tipp: Kinderarzt, Tierarzt, Notfallnummern zuerst.")), () => bearbeiten("kontakt"));
 };
 
 /* ---------- Geburtstage ---------- */
@@ -196,11 +196,11 @@ V.geburtstage = function () {
   return mitPlus(seite(kopf("Geburtstage", [neuKnopf("Geburtstag", () => bearbeiten("geburtstag"))]),
     xs.length ? Object.entries(monate).map(([k, gs]) => [h("div", { class: "gruppe-titel" }, MONATE[k % 100] + " " + Math.floor(k / 100)),
       h("ul", { class: "liste karte knapp" }, gs.map(g => h("li", { class: "zeile klickbar", onclick: () => g.quelle === "eintrag" ? bearbeiten("geburtstag", g.obj) : g.quelle === "kontakt" ? bearbeiten("kontakt", g.obj) : location.hash = "#/mitglieder/" + g.obj.id },
-        g.quelle === "person" ? ava(g.obj, "mini") : h("span", null, "🎂"),
+        g.quelle === "person" ? ava(g.obj) : h("span", { class: "ava leer-ava" }, initialen(g.name)),
         h("span", { class: "haupt" }, h("span", { class: "titel" }, g.name), h("span", { class: "unter" }, [WT[g.naechster.getDay()] + ", " + fmtDatum(iso(g.naechster), false),
-          g.alter !== null ? `wird ${g.alter}` : null, g.obj.daten && g.obj.daten.beziehung, g.obj.daten && g.obj.daten.ideen ? "🎁 Ideen" : null].filter(Boolean).join(" · "))),
-        h("span", { class: "etikett" + (g.tage === 0 ? " warn" : g.tage <= 7 ? " gelb" : "") }, g.tage === 0 ? "heute 🎉" : g.tage === 1 ? "morgen" : `in ${g.tage} Tagen`))))])
-      : leer("🎂", "Noch keine Geburtstage."),
+          g.alter !== null ? `wird ${g.alter}` : null, g.obj.daten && g.obj.daten.beziehung, g.obj.daten && g.obj.daten.ideen ? "Geschenkideen" : null].filter(Boolean).join(" · "))),
+        h("span", { class: "etikett" + (g.tage === 0 ? " warn" : g.tage <= 7 ? " gelb" : "") }, g.tage === 0 ? "heute" : g.tage === 1 ? "morgen" : `in ${g.tage} Tagen`))))])
+      : leer("", "Noch keine Geburtstage."),
     ohne.length ? h("p", { class: "klein leise" }, "Noch ohne Geburtstag: ", ohne.map((p, i) => [i ? ", " : "", h("a", { href: "#/mitglieder/" + p.id }, p.name)])) : null,
     h("p", { class: "klein leise" }, "Erinnerung: eine Woche vorher und am Tag selbst (unter Hinweise).")), () => bearbeiten("geburtstag"));
 };
@@ -247,15 +247,15 @@ V.kalender = function (args, q) {
   const monatEl = h("div", { class: "monat" }, ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(w => h("div", { class: "wt" }, w)),
     tage.map(d => { const di = iso(d), xs = nach[di] || [];
       return h("div", { class: "tag" + (d.getMonth() !== gd.getMonth() ? " anders" : "") + (di === heuteIso() ? " heute" : "") + (di === gew ? " gewaehlt" : ""), onclick: () => geh(d), ondblclick: () => bearbeiten("termin", null, { datum: di }) },
-        h("span", { class: "nr" }, d.getDate()), xs.slice(0, 4).map(x => h("div", { class: "ev" + (x.art === "geburtstag" ? " geb" : x.art === "aufgabe" ? " auf" : "") }, (zeitTeil(x.datum) ? zeitTeil(x.datum) + " " : "") + x.titel)),
-        xs.length > 4 ? h("div", { class: "klein leise" }, "+" + (xs.length - 4)) : null); }));
+        h("span", { class: "nr" }, d.getDate()), xs.slice(0, 4).map(x => h("div", { class: "ev" }, (zeitTeil(x.datum) ? zeitTeil(x.datum) + " " : "") + x.titel)),
+        xs.length > 4 ? h("div", { class: "etikett mehr-ev" }, "+" + (xs.length - 4)) : null, xs.length ? h("span", { class: "anzahl" }, `(${xs.length})`) : null); }));
   const tagEvs = nach[gew] || [];
   const tagKarte = h("div", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, fmtLang(gew)), h("span", { class: "rechts" }, knopf("Termin", () => bearbeiten("termin", null, { datum: gew }), "klein", "plus"))),
     tagEvs.length ? h("ul", { class: "liste" }, tagEvs.map(x => h("li", { class: "zeile klickbar", onclick: () => x.art === "termin" ? bearbeiten("termin", x.e) : x.art === "aufgabe" ? bearbeiten("aufgabe", x.e) : location.hash = x.link },
-      x.art === "aufgabe" ? checkKnopf(false, () => abhaken(x.e)) : h("span", { class: "etikett" + (x.art === "termin" ? " gut" : x.art === "geburtstag" ? " gelb" : "") }, zeitTeil(x.datum) || "ganztags"),
+      x.art === "aufgabe" ? checkKnopf(false, () => abhaken(x.e)) : h("span", { class: "etikett" }, zeitTeil(x.datum) || "ganztags"),
       h("span", { class: "haupt" }, h("span", { class: "titel" }, x.titel), x.e && x.e.daten ? h("span", { class: "unter" }, [x.e.daten.ort, x.e.daten.ende && x.e.daten.ende.length > 10 ? "bis " + zeitTeil(x.e.daten.ende) : null,
-        x.e.daten.wiederholung ? "↻ " + WH_NAME[x.e.daten.wiederholung] : null, (x.e.daten.wer || []).map(name).join(", ")].filter(Boolean).join(" · ")) : null),
-      x.e && x.art === "termin" ? h("span", { class: "rechts" }, sichtEtikett(x.e)) : null))) : leer("🌤", "Nichts geplant."));
+        x.e.daten.wiederholung ? WH_NAME[x.e.daten.wiederholung].toLowerCase() : null, (x.e.daten.wer || []).map(name).join(", ")].filter(Boolean).join(" · ")) : null),
+      x.e && x.art === "termin" ? h("span", { class: "rechts" }, sichtEtikett(x.e)) : null))) : leer("", "Nichts geplant."));
   // Agenda: nächste 30 Tage
   const ag = ereignisse(alsDatum(heuteIso()), plusTage(alsDatum(heuteIso()), 30)).filter(x => x.art !== "aufgabe").slice(0, 12);
   const agenda = h("div", { class: "karte" }, h("h2", null, "Demnächst"), ag.length ? h("ul", { class: "liste" }, ag.map(x => h("li", { class: "zeile klickbar", onclick: () => geh(alsDatum(x.datum)) },

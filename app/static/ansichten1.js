@@ -58,16 +58,16 @@ function ereignisse(von, bis) {
   for (const e of alle("aufgabe")) if (!e.erledigt && drin(e.datum)) aus.push({ datum: e.datum, titel: e.titel, art: "aufgabe", link: "#/aufgaben", e });
   for (const g of geburtstagsListe()) {
     const s = iso(g.naechster);
-    if (drin(s)) aus.push({ datum: s, titel: `🎂 ${g.name}` + (g.alter ? ` (${g.alter})` : ""), art: "geburtstag", link: "#/geburtstage" });
+    if (drin(s)) aus.push({ datum: s, titel: `Geburtstag ${g.name}` + (g.alter ? ` (${g.alter})` : ""), art: "geburtstag", link: "#/geburtstage" });
     // auch das Jahr danach (bei langen Bereichen)
     const s2 = iso(new Date(g.naechster.getFullYear() + 1, g.naechster.getMonth(), g.naechster.getDate()));
-    if (drin(s2)) aus.push({ datum: s2, titel: `🎂 ${g.name}`, art: "geburtstag", link: "#/geburtstage" });
+    if (drin(s2)) aus.push({ datum: s2, titel: `Geburtstag ${g.name}`, art: "geburtstag", link: "#/geburtstage" });
   }
   for (const e of alle("fahrzeug")) for (const [k, t] of [["mfk", "MFK"], ["service", "Service"], ["versicherung", "Versicherung"]])
-    if (drin(e.daten[k])) aus.push({ datum: e.daten[k], titel: `🚗 ${t}: ${e.titel}`, art: "fahrzeug", link: "#/fahrzeuge/" + e.id });
+    if (drin(e.daten[k])) aus.push({ datum: e.daten[k], titel: `${t} ${e.titel}`, art: "fahrzeug", link: "#/fahrzeuge/" + e.id });
   for (const e of alle("tier_eintrag")) if (!e.erledigt && drin(e.daten.naechstes))
-    aus.push({ datum: e.daten.naechstes, titel: `🐾 ${e.titel} (${name(e.daten.tier_id)})`, art: "tier", link: "#/haustiere/" + e.daten.tier_id });
-  for (const e of alle("menu")) if (drin(e.datum)) aus.push({ datum: e.datum, titel: "🍽 " + menuTitel(e), art: "menu", link: "#/rezepte?ansicht=plan" });
+    aus.push({ datum: e.daten.naechstes, titel: `${e.titel} ${name(e.daten.tier_id)}`, art: "tier", link: "#/haustiere/" + e.daten.tier_id });
+  for (const e of alle("menu")) if (drin(e.datum)) aus.push({ datum: e.datum, titel: "Essen: " + menuTitel(e), art: "menu", link: "#/rezepte?ansicht=plan", e });
   return aus.sort((a, b) => (a.datum.length > 10 ? a.datum : a.datum + "T00:00") < (b.datum.length > 10 ? b.datum : b.datum + "T00:00") ? -1 : 1);
 }
 function menuTitel(e) { const r = e.daten.rezept_id && S.E.get(e.daten.rezept_id); return r ? r.titel : e.titel; }
@@ -86,71 +86,87 @@ V.uebersicht = function () {
   const evHeute = ereignisse(jetztD, jetztD).filter(x => x.art !== "aufgabe");
   const woche = ereignisse(plusTage(jetztD, 1), plusTage(jetztD, 7));
   const einkauf = S.module.includes("einkauf") ? alle("einkauf", e => !e.erledigt).length : 0;
-  const kachel = (art, titel, icon, link, zahl, text) => h("a", { class: "kachel " + art, href: link },
-    h("span", { class: "oben" }, h("span", { class: "auge" }, titel), ic(icon)), h("span", { class: "zahl" + (String(zahl.textContent || zahl).length > 5 ? " lang" : "") }, zahl), h("span", { class: "text" }, text));
-  const naechster = evHeute.find(x => zeitTeil(x.datum) && x.datum.slice(11, 16) >= new Date().toTimeString().slice(0, 5)) || evHeute.find(x => zeitTeil(x.datum));
-  const zeitZahl = naechster ? h("span", null, zeitTeil(naechster.datum).slice(0, 2), h("small", null, ":" + zeitTeil(naechster.datum).slice(3, 5))) : null;
-  const einkaufOffen = S.module.includes("einkauf") ? alle("einkauf", e => !e.erledigt) : [];
-  const geb = S.module.includes("geburtstage") ? geburtstagsListe().find(g => g.tage <= 14) : null;
-  const kacheln = h("div", { class: "kacheln" },
-    S.module.includes("aufgaben") ? kachel("haupt", "Aufgaben", "aufgaben", "#/aufgaben", ueber.length + heuteA.length, ueber.length ? `fällig, ${ueber.length} überfällig` : "heute fällig") : null,
-    S.module.includes("einkauf") ? kachel("", "Einkauf", "einkauf", "#/einkauf", einkauf, einkaufOffen.slice(0, 4).map(x => x.titel).join(", ") || "Liste ist leer") : null,
-    S.module.includes("kalender") ? kachel("", "Heute", "kalender", "#/kalender", zeitZahl || evHeute.length, naechster ? naechster.titel : evHeute.length === 1 ? "Termin heute" : "Termine heute") : null,
-    S.module.includes("ausgaben") ? ausgabenKachel(kachel) : null,
-    geb ? h("a", { class: "kachel breit", href: "#/geburtstage" }, ic("geburtstage"), h("span", { class: "haupt" }, h("b", null, geb.tage === 0 ? `${geb.name} hat heute Geburtstag` : `${geb.name} hat Geburtstag`),
-      h("span", { class: "text" }, geb.tage === 0 ? "Heute" : geb.tage === 1 ? "Morgen" : `in ${geb.tage} Tagen · ${fmtLang(iso(geb.naechster))}`)), h("span", { class: "etikett gut" }, geb.tage === 0 ? "HEUTE" : geb.tage + " T")) : null,
-    S.hinweise ? h("a", { class: "kachel breit", href: "#/hinweise" }, ic("hinweise"), h("span", { class: "haupt" }, h("b", null, S.hinweise === 1 ? "1 neuer Hinweis" : `${S.hinweise} neue Hinweise`)), h("span", { class: "etikett warn" }, "NEU")) : null);
+
+  // Kennzahlen: kräftige Linie, Bezeichnung in Serif, Zahl in Mono
+  const kennzahl = (link, label, wert, erfuellt) => h("a", { class: "kennzahl", href: link }, h("span", { class: "kennzahl-label" }, label),
+    h("span", { class: "kennzahl-wert" + (erfuellt ? " erfuellt" : "") }, wert));
+  const kennzahlen = h("div", { class: "kennzahlen" },
+    S.module.includes("aufgaben") ? kennzahl("#/aufgaben", ueber.length ? `Fällig, davon ${ueber.length} überfällig` : "Heute fällig", String(ueber.length + heuteA.length)) : null,
+    S.module.includes("einkauf") ? kennzahl("#/einkauf", "Auf der Einkaufsliste", String(einkauf)) : null,
+    S.module.includes("kalender") ? kennzahl("#/kalender", "Termine heute", String(evHeute.length)) : null,
+    S.module.includes("ausgaben") ? ausgabenKennzahl(kennzahl) : null);
+  const hinweisKasten = S.hinweise ? h("a", { class: "hinweis-kasten", href: "#/hinweise" },
+    S.hinweise === 1 ? "1 neuer Hinweis" : `${S.hinweise} neue Hinweise`, h("span", { class: "link-pfeil" }, " Ansehen →")) : null;
 
   const zeileAufgabe = e => h("li", { class: "zeile" }, checkKnopf(false, () => abhaken(e)),
     h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel),
-      h("span", { class: "unter" }, [e.datum ? fmtRelativ(e.datum) : "", e.daten.wiederholung ? " · ↻ " + WH_NAME[e.daten.wiederholung] : "", e.zugewiesen_id && e.zugewiesen_id !== S.ich.id ? " · " + name(e.zugewiesen_id) : ""].join(""))),
-    e.datum && e.datum.slice(0, 10) < heute ? h("span", { class: "etikett warn" }, "überfällig") : null);
+      h("span", { class: "unter" }, [e.datum ? fmtRelativ(e.datum) : null, e.daten.wiederholung ? WH_NAME[e.daten.wiederholung].toLowerCase() : null,
+        e.zugewiesen_id && e.zugewiesen_id !== S.ich.id ? name(e.zugewiesen_id) : null].filter(Boolean).join(" · "))),
+    e.datum && e.datum.slice(0, 10) < heute ? h("span", { class: "rechts" }, h("span", { class: "status-faellig" }, "überfällig")) : null);
   const zeileEv = x => h("li", { class: "zeile klickbar", onclick: () => location.hash = x.link },
-    h("span", { class: "etikett" + (x.art === "geburtstag" ? " gelb" : x.art === "termin" ? " gut" : "") }, zeitTeil(x.datum) || (x.art === "aufgabe" ? "☐" : x.art === "menu" ? "Essen" : "ganztags")),
-    h("span", { class: "haupt" }, h("span", { class: "titel" }, x.titel), x.e && x.e.daten && x.e.daten.ort ? h("span", { class: "unter" }, x.e.daten.ort) : null));
+    h("span", { class: "haupt" }, h("span", { class: "titel" }, x.titel), x.e && x.e.daten && x.e.daten.ort ? h("span", { class: "unter" }, x.e.daten.ort) : null),
+    h("span", { class: "wert" }, zeitTeil(x.datum) || (x.art === "menu" ? ({ morgen: "Zmorge", mittag: "Zmittag" }[x.e && x.e.daten.mahlzeit] || "Znacht") : "ganztags")));
+  const abschnitt = (titel, link, ...inhalt) => h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, titel),
+    link ? h("a", { class: "rechts link", href: link[0] }, link[1] + " →") : null), ...inhalt);
 
-  const heuteKarte = h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Heute"), h("span", { class: "leise klein" }, fmtLang(heute))),
-    (ueber.length + heuteA.length + evHeute.length) === 0 ? leer("☀️", "Nichts fällig heute. Schön!") :
+  const heuteKarte = abschnitt("Heute", null,
+    (ueber.length + heuteA.length + evHeute.length) === 0 ? leer("", "Heute ist nichts fällig.") :
       h("ul", { class: "liste" }, evHeute.map(zeileEv), ueber.map(zeileAufgabe), heuteA.map(zeileAufgabe)));
   const wocheGruppen = {};
   for (const x of woche) (wocheGruppen[x.datum.slice(0, 10)] = wocheGruppen[x.datum.slice(0, 10)] || []).push(x);
-  const wocheKarte = h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Die nächsten 7 Tage"), h("a", { class: "rechts klein", href: "#/kalender" }, "Kalender")),
-    woche.length ? Object.entries(wocheGruppen).map(([d, xs]) => [h("div", { class: "gruppe-titel" }, fmtRelativ(d) === "morgen" ? "Morgen" : fmtLang(d)), h("ul", { class: "liste" }, xs.map(zeileEv))]) : leer("🗓", "Keine Termine in den nächsten Tagen."));
+  const wocheKarte = abschnitt("Die nächsten 7 Tage", ["#/kalender", "Kalender"],
+    woche.length ? Object.entries(wocheGruppen).map(([d, xs]) => [h("div", { class: "gruppe-titel" }, fmtRelativ(d) === "morgen" ? "Morgen" : fmtLang(d)), h("ul", { class: "liste" }, xs.map(zeileEv))])
+      : leer("", "Keine Termine in den nächsten Tagen."));
 
   const gebs = geburtstagsListe().slice(0, 4);
-  const gebKarte = S.module.includes("geburtstage") && gebs.length ? h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Geburtstage"), h("a", { class: "rechts klein", href: "#/geburtstage" }, "Alle")),
-    h("ul", { class: "liste" }, gebs.map(g => h("li", { class: "zeile" }, h("span", { class: "haupt" }, h("span", { class: "titel" }, g.name), h("span", { class: "unter" }, fmtDatum(iso(g.naechster), false) + (g.alter ? ` · wird ${g.alter}` : ""))),
-      h("span", { class: "etikett" + (g.tage <= 7 ? " gelb" : "") }, g.tage === 0 ? "heute 🎉" : g.tage === 1 ? "morgen" : `in ${g.tage} T.`))))) : null;
+  const gebKarte = S.module.includes("geburtstage") && gebs.length ? abschnitt("Geburtstage", ["#/geburtstage", "Alle"],
+    h("ul", { class: "liste" }, gebs.map(g => h("li", { class: "zeile" }, h("span", { class: "haupt" }, h("span", { class: "titel" }, g.name),
+      h("span", { class: "unter" }, fmtDatum(iso(g.naechster), false) + (g.alter ? ` · wird ${g.alter}` : ""))),
+      h("span", { class: "wert" }, g.tage === 0 ? "heute" : g.tage === 1 ? "morgen" : `in ${g.tage} T.`))))) : null;
 
   const listen = S.module.includes("einkauf") ? alle("einkauf_liste") : [];
-  const einkaufKarte = listen.length ? h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Einkauf")),
+  const einkaufKarte = listen.length ? abschnitt("Einkauf", null,
     h("ul", { class: "liste" }, listen.map(l => { const n = kinder(l.id, "einkauf").filter(x => !x.erledigt);
-      return h("li", { class: "zeile klickbar", onclick: () => location.hash = "#/einkauf/" + l.id }, h("span", null, l.daten.emoji || "🛒"),
-        h("span", { class: "haupt" }, h("span", { class: "titel" }, l.titel), h("span", { class: "unter" }, n.slice(0, 5).map(x => x.titel).join(", ") || "leer")),
-        h("span", { class: "etikett" }, n.length)); }))) : null;
+      return h("li", { class: "zeile klickbar", onclick: () => location.hash = "#/einkauf/" + l.id },
+        h("span", { class: "haupt" }, h("span", { class: "titel" }, l.titel), h("span", { class: "unter" }, n.slice(0, 5).map(x => x.titel).join(" · ") || "leer")),
+        h("span", { class: "wert" }, String(n.length))); }))) : null;
 
-  const tierKarte = S.module.includes("haustiere") && tiere().length ? h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Haustiere"), h("a", { class: "rechts klein", href: "#/haustiere" }, "Öffnen")),
-    h("div", { class: "familie-reihe" }, tiere().map(t => { const f = tierFaellig(t.id)[0];
-      return h("a", { class: "mitglied", href: "#/haustiere/" + t.id, style: { width: "auto", "flex-direction": "row", gap: "8px" } }, ava(t), h("span", { style: { "text-align": "left" } }, h("b", null, t.name), h("br"),
-        h("span", { class: "klein leise" }, f ? `${f.titel} ${fmtRelativ(f.daten.naechstes)}` : "nichts fällig"))); }))) : null;
+  const tierKarte = S.module.includes("haustiere") && tiere().length ? abschnitt("Haustiere", ["#/haustiere", "Öffnen"],
+    h("ul", { class: "liste" }, tiere().map(t => { const f = tierFaellig(t.id)[0];
+      return h("li", { class: "zeile klickbar", onclick: () => location.hash = "#/haustiere/" + t.id }, ava(t),
+        h("span", { class: "haupt" }, h("span", { class: "titel" }, t.name), h("span", { class: "unter" }, f ? `${f.titel} ${fmtRelativ(f.daten.naechstes)}` : "nichts fällig"))); }))) : null;
 
-  const akt = h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Zuletzt in der Familie")), h("div", { class: "leise klein" }, "Lädt …"));
+  const akt = abschnitt("Zuletzt in der Familie", null, h("div", { class: "laedt" }, "Lädt …"));
   api("GET", "/aktivitaet").then(d => {
     const xs = d.aktivitaet.slice(0, 8);
     akt.lastChild.replaceWith(xs.length ? h("ul", { class: "liste" }, xs.map(a => h("li", { class: "zeile klickbar", onclick: () => location.hash = linkFuer(a) },
-      ava(person(a.person_id), "mini"), h("span", { class: "haupt" }, h("span", { class: "titel" }, a.titel || TYP_NAME[a.typ] || a.typ),
-        h("span", { class: "unter" }, `${name(a.person_id)} · ${a.aktion} · ${TYP_NAME[a.typ] || ""} · ${fmtVor(a.zeit)}`))))) : leer("🌱", "Noch nichts passiert."));
+      ava(person(a.person_id)), h("span", { class: "haupt" }, h("span", { class: "titel" }, a.titel || TYP_NAME[a.typ] || a.typ),
+        h("span", { class: "unter" }, `${name(a.person_id)} · ${a.aktion} · ${TYP_NAME[a.typ] || ""} · ${fmtVor(a.zeit)}`))))) : leer("", "Noch nichts passiert."));
   }).catch(() => {});
 
-  const familie = h("section", { class: "karte" }, h("div", { class: "karte-kopf" }, h("h2", null, "Familie"), h("a", { class: "rechts klein", href: "#/mitglieder" }, "Alle")),
+  const familie = abschnitt("Familie", ["#/mitglieder", "Alle"],
     S.haushalte.map(hh => { const ps = aktive().filter(p => p.haushalt_id === hh.id); if (!ps.length) return null;
-      return [h("div", { class: "gruppe-titel" }, hh.emoji + " " + hh.name), h("div", { class: "familie-reihe" }, ps.map(p => h("a", { class: "mitglied", href: "#/mitglieder/" + p.id }, ava(p), p.name)))]; }));
+      return [h("div", { class: "gruppe-titel" }, hh.name), h("div", { class: "familie-reihe" }, ps.map(p => h("a", { class: "mitglied", href: "#/mitglieder/" + p.id }, ava(p), h("span", null, p.name))))]; }));
 
-  return mitPlus(seite(
-    h("div", { class: "gruss" }, h("div", { class: "auge" }, fmtLang(heute)), h("h1", null, gruss() + ",", h("br"), S.ich.name)),
-    kacheln,
-    h("div", { class: "zwei" }, h("div", { class: "stapel" }, heuteKarte, wocheKarte, akt), h("div", { class: "stapel" }, einkaufKarte, gebKarte, tierKarte, familie))), schnellNeu);
+  const titel = h("div", { class: "seitenkopf" }, h("div", { class: "kopf" },
+    h("div", { class: "kopf-text" }, h("h1", null, `${gruss()}, ${S.ich.name}`), h("div", { class: "untertitel" }, fmtLang(heute))),
+    h("div", { class: "rechts" }, sonne())));
+  return seite(titel, h("button", { class: "knopf haupt voll", type: "button", onclick: schnellNeu }, "Etwas eintragen"),
+    kennzahlen, hinweisKasten,
+    h("div", { class: "zwei" }, h("div", { class: "stapel" }, heuteKarte, wocheKarte, akt), h("div", { class: "stapel" }, einkaufKarte, gebKarte, tierKarte, familie)));
 };
+/* Holzschnitt-Sonne (Kladde, Kopf der Startseite): 12 Strahlen in Ziegel, Scheibe in Senf, Ring in onMustard. 46er-Raster. */
+function sonne() {
+  const s = document.createElementNS(SVGNS, "svg");
+  s.setAttribute("viewBox", "-23 -23 46 46"); s.setAttribute("class", "sonne"); s.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < 12; i++) {
+    const p = document.createElementNS(SVGNS, "polygon");
+    p.setAttribute("points", "-3,-12 0,-22 3,-12"); p.setAttribute("fill", "#B4472E"); p.setAttribute("transform", `rotate(${i * 30})`); s.append(p);
+  }
+  const c = document.createElementNS(SVGNS, "circle");
+  c.setAttribute("r", "10"); c.setAttribute("fill", "#E9C46A"); c.setAttribute("stroke", "#2A2110"); c.setAttribute("stroke-width", "2"); s.append(c);
+  return s;
+}
 const TYP_NAME = { aufgabe: "Aufgabe", projekt: "Projekt", einkauf_liste: "Einkaufsliste", einkauf: "Einkauf", ausgaben_topf: "Kasse", ausgabe: "Ausgabe",
   notiz: "Notiz", rezept: "Rezept", menu: "Menüplan", kontakt: "Kontakt", geburtstag: "Geburtstag", termin: "Termin", vorrat: "Vorrat",
   fahrzeug: "Fahrzeug", fahrzeug_eintrag: "Fahrtenbuch", tier_eintrag: "Haustier" };
@@ -173,18 +189,18 @@ function linkFuer(a) {
   }
 }
 function schnellNeu() {
-  const wahl = [["aufgabe", "✅ Aufgabe", "aufgaben"], ["termin", "📅 Termin", "kalender"], ["einkauf", "🛒 Auf die Einkaufsliste", "einkauf"],
-    ["ausgabe", "💸 Ausgabe", "ausgaben"], ["notiz", "📝 Notiz", "notizen"], ["geburtstag", "🎂 Geburtstag", "geburtstage"], ["kontakt", "📇 Kontakt", "kontakte"]]
+  const wahl = [["aufgabe", "Aufgabe", "aufgaben"], ["termin", "Termin", "kalender"], ["einkauf", "Auf die Einkaufsliste", "einkauf"],
+    ["ausgabe", "Ausgabe", "ausgaben"], ["notiz", "Notiz", "notizen"], ["geburtstag", "Geburtstag", "geburtstage"], ["kontakt", "Kontakt", "kontakte"]]
     .filter(w => S.module.includes(w[2]));
   const zu = dialog("Neu", h("div", { class: "stapel" }, wahl.map(([t, n]) => h("button", { class: "knopf", type: "button", style: { width: "100%", "justify-content": "flex-start" },
     onclick: () => { zu(); if (t === "einkauf") { const l = alle("einkauf_liste")[0]; if (l) location.hash = "#/einkauf/" + l.id; else bearbeiten("einkauf_liste"); }
       else if (t === "ausgabe") { const k = alle("ausgaben_topf")[0]; if (k) ausgabeNeu(k); else bearbeiten("ausgaben_topf"); } else bearbeiten(t); } }, n))));
 }
-function ausgabenKachel(kachel) {
+function ausgabenKennzahl(kennzahl) {
   let summe = 0;
   for (const t of alle("ausgaben_topf")) summe += (salden(t).netto[S.ich.id] || 0);
-  const zahl = h("span", { class: summe < -0.004 ? "minus-betrag" : summe > 0.004 ? "plus-betrag" : "" }, chf(Math.abs(summe)).replace("CHF ", ""), h("small", null, " CHF"));
-  return kachel("", "Ausgaben", "ausgaben", "#/ausgaben", zahl, summe < -0.004 ? "schuldest du" : summe > 0.004 ? "bekommst du" : "alles ausgeglichen");
+  if (Math.abs(summe) < 0.005) return kennzahl("#/ausgaben", "Ausgaben", "ausgeglichen", true);
+  return kennzahl("#/ausgaben", summe < 0 ? "Du schuldest" : "Du bekommst", chf(Math.abs(summe)));
 }
 
 /* ---------- Aufgaben ---------- */
@@ -219,16 +235,16 @@ V.aufgaben = function (args, q) {
   const sortiert = a => a.sort((x, y) => (x.daten.prioritaet === "hoch" ? 0 : 1) - (y.daten.prioritaet === "hoch" ? 0 : 1) || ((x.datum || "9") < (y.datum || "9") ? -1 : 1));
   const zeile = e => h("li", { class: "zeile klickbar" + (e.erledigt ? " fertig" : ""), onclick: () => bearbeiten("aufgabe", e) },
     checkKnopf(!!e.erledigt, () => abhaken(e)),
-    h("span", { class: "haupt" }, h("span", { class: "titel" }, e.daten.prioritaet === "hoch" ? "❗ " : "", e.titel),
-      h("span", { class: "unter" }, [e.datum ? fmtRelativ(e.datum) : null, e.daten.wiederholung ? "↻ " + WH_NAME[e.daten.wiederholung] : null,
-        e.daten.reihum && e.daten.reihum.length ? "reihum" : null, e.eltern_id && S.E.get(e.eltern_id) ? "📁 " + S.E.get(e.eltern_id).titel : null,
+    h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel),
+      h("span", { class: "unter" }, [e.datum ? fmtRelativ(e.datum) : null, e.daten.prioritaet === "hoch" ? "wichtig" : null, e.daten.wiederholung ? WH_NAME[e.daten.wiederholung].toLowerCase() : null,
+        e.daten.reihum && e.daten.reihum.length ? "reihum" : null, e.eltern_id && S.E.get(e.eltern_id) ? "Projekt " + S.E.get(e.eltern_id).titel : null,
         e.erledigt && e.daten.erledigt_von ? `erledigt von ${name(e.daten.erledigt_von)} ${fmtVor(e.daten.erledigt_am)}` : null].filter(Boolean).join(" · "))),
     h("span", { class: "rechts" }, sichtEtikett(e), e.zugewiesen_id ? ava(person(e.zugewiesen_id), "mini") : null));
   const setz = (k, v) => { const p = new URLSearchParams(q); p.set(k, v); location.hash = "#/aufgaben?" + p; };
   const inhalt = offen.length || fertig.length ? h("div", null,
     gruppen.map(([t, f]) => { const g = sortiert(offen.filter(f)); return g.length ? [h("div", { class: "gruppe-titel" }, t + " · " + g.length), h("ul", { class: "liste karte knapp" }, g.map(zeile))] : null; }),
     fertig.length ? h("details", { style: { "margin-top": "14px" } }, h("summary", { class: "leise" }, `Erledigt (${fertig.length})`), h("ul", { class: "liste karte knapp" }, fertig.slice(0, 50).map(zeile))) : null)
-    : leer("✅", "Keine Aufgaben. Leg eine an – z. B. ein Ämtli, das reihum geht.");
+    : leer("", "Keine Aufgaben. Leg eine an – z. B. ein Ämtli, das reihum geht.");
   const schnell = h("input", { class: "eingabe", placeholder: "Schnell hinzufügen … (Enter)", onkeydown: async ev => {
     if (ev.key === "Enter" && schnell.value.trim()) { ev.preventDefault(); const t = schnell.value.trim(); schnell.value = "";
       await neu("aufgabe", { titel: t, sicht: "haushalt", zugewiesen_id: filter === "meine" ? S.ich.id : null, daten: {} }); setTimeout(() => document.querySelector(".schnell input")?.focus(), 50); } } });
@@ -246,7 +262,6 @@ FORMULARE.projekt = {
     { key: "titel", text: "Name", pflicht: true, platz: "z. B. Umzug, Ferien Tessin, Kinderzimmer" },
     { key: "d.status", text: "Status", art: "auswahl", optionen: PROJEKT_STATUS, std: "aktiv", halb: true },
     { key: "datum", text: "Ziel bis", art: "datum", halb: true },
-    { key: "d.emoji", text: "Symbol", platz: "📦", halb: true, max: 8 },
     { key: "d.budget", text: "Budget (CHF)", art: "zahl", halb: true },
     { key: "d.beschreibung", text: "Beschreibung", art: "textarea", zeilen: 4 },
   ],
@@ -257,26 +272,26 @@ V.projekte = function (args) {
   const xs = alle("projekt");
   const karte = p => { const t = kinder(p.id, "aufgabe"), f = t.filter(x => x.erledigt).length;
     return h("a", { class: "karte", href: "#/projekte/" + p.id, style: { color: "var(--text)" } },
-      h("div", { class: "karte-kopf" }, h("span", { style: { "font-size": "1.5rem" } }, p.daten.emoji || "📁"), h("h2", null, p.titel), h("span", { class: "rechts" }, sichtEtikett(p))),
+      h("div", { class: "karte-kopf" }, h("h2", null, p.titel), h("span", { class: "rechts" }, sichtEtikett(p))),
       h("div", { class: "klein leise" }, (PROJEKT_STATUS.find(s => s[0] === (p.daten.status || "aktiv")) || [])[1], p.datum ? " · bis " + fmtDatum(p.datum) : "", ` · ${f}/${t.length} erledigt`),
       h("div", { class: "balken", style: { "margin-top": "8px" } }, h("i", { style: { width: (t.length ? Math.round(100 * f / t.length) : 0) + "%" } }))); };
   const aktiv = xs.filter(p => p.daten.status !== "fertig"), fertig = xs.filter(p => p.daten.status === "fertig");
   return mitPlus(seite(kopf("Projekte", [neuKnopf("Projekt", () => bearbeiten("projekt"))]),
     xs.length ? [h("div", { class: "raster" }, aktiv.map(karte)), fertig.length ? [h("div", { class: "gruppe-titel" }, "Abgeschlossen"), h("div", { class: "raster" }, fertig.map(karte))] : null]
-      : leer("📁", "Noch keine Projekte. Gut für Umzug, Ferienplanung, Renovation …")), () => bearbeiten("projekt"));
+      : leer("", "Noch keine Projekte. Gut für Umzug, Ferienplanung, Renovation …")), () => bearbeiten("projekt"));
 };
 function projektDetail(id) {
   const p = S.E.get(id);
-  if (!p) return leer("🤷", "Projekt nicht gefunden.");
+  if (!p) return leer("", "Projekt nicht gefunden.");
   const t = kinder(id, "aufgabe").sort((a, b) => a.erledigt - b.erledigt || ((a.datum || "9") < (b.datum || "9") ? -1 : 1));
   const schnell = h("input", { class: "eingabe", placeholder: "Teilaufgabe hinzufügen … (Enter)", onkeydown: async ev => {
     if (ev.key === "Enter" && schnell.value.trim()) { ev.preventDefault(); const v = schnell.value.trim(); schnell.value = ""; await neu("aufgabe", { titel: v, eltern_id: id, daten: {} }); setTimeout(() => document.querySelector(".schnell input")?.focus(), 50); } } });
   const f = t.filter(x => x.erledigt).length;
-  return mitPlus(seite(kopf((p.daten.emoji || "📁") + " " + p.titel, [knopf("Bearbeiten", () => bearbeiten("projekt", p), "", "stift")], ["#/projekte", "Projekte"]),
+  return mitPlus(seite(kopf(p.titel, [knopf("Bearbeiten", () => bearbeiten("projekt", p), "", "stift")], ["#/projekte", "Projekte"]),
     h("div", { class: "zwei" }, h("div", null, h("div", { class: "schnell" }, schnell),
       t.length ? h("ul", { class: "liste karte knapp" }, t.map(e => h("li", { class: "zeile klickbar" + (e.erledigt ? " fertig" : ""), onclick: () => bearbeiten("aufgabe", e) },
         checkKnopf(!!e.erledigt, () => abhaken(e)), h("span", { class: "haupt" }, h("span", { class: "titel" }, e.titel), h("span", { class: "unter" }, e.datum ? fmtRelativ(e.datum) : "")),
-        e.zugewiesen_id ? ava(person(e.zugewiesen_id), "mini") : null))) : leer("🧩", "Noch keine Teilaufgaben.")),
+        e.zugewiesen_id ? ava(person(e.zugewiesen_id), "mini") : null))) : leer("", "Noch keine Teilaufgaben.")),
       h("div", { class: "karte" }, h("h2", null, "Übersicht"), h("div", { class: "balken" }, h("i", { style: { width: (t.length ? Math.round(100 * f / t.length) : 0) + "%" } })),
         h("p", { class: "leise klein" }, `${f} von ${t.length} erledigt`),
         h("dl", { class: "eigenschaften" }, h("dt", null, "Status"), h("dd", null, (PROJEKT_STATUS.find(s => s[0] === (p.daten.status || "aktiv")) || [])[1]),
@@ -309,7 +324,7 @@ function mengeTrennen(text) {
 }
 FORMULARE.einkauf_liste = {
   titel: "Einkaufsliste",
-  felder: () => [{ key: "titel", text: "Name", pflicht: true, platz: "z. B. Migros, Coop, Landi, Apotheke" }, { key: "d.emoji", text: "Symbol", platz: "🛒", max: 8 }],
+  felder: () => [{ key: "titel", text: "Name", pflicht: true, platz: "z. B. Migros, Coop, Landi, Apotheke" }],
   danach: n => { location.hash = "#/einkauf/" + n.id; },
 };
 FORMULARE.einkauf = {
@@ -324,13 +339,12 @@ V.einkauf = function (args) {
   if (listen.length === 1 && !sessionStorage.getItem("einkauf-uebersicht")) { sessionStorage.setItem("einkauf-uebersicht", "1"); setTimeout(() => location.replace("#/einkauf/" + listen[0].id), 0); }
   return mitPlus(seite(kopf("Einkauf", [neuKnopf("Liste", () => bearbeiten("einkauf_liste"))]),
     listen.length ? h("div", { class: "raster" }, listen.map(l => { const n = kinder(l.id, "einkauf").filter(x => !x.erledigt);
-      return h("a", { class: "karte", href: "#/einkauf/" + l.id, style: { color: "var(--text)" } }, h("div", { class: "karte-kopf" }, h("span", { style: { "font-size": "1.5rem" } }, l.daten.emoji || "🛒"),
-        h("h2", null, l.titel), h("span", { class: "rechts" }, sichtEtikett(l))), h("div", { class: "leise klein" }, n.length ? `${n.length} offen: ` + n.slice(0, 6).map(x => x.titel).join(", ") : "Alles eingekauft 🎉")); }))
-      : leer("🛒", "Noch keine Einkaufsliste.", knopf("Liste anlegen", () => bearbeiten("einkauf_liste"), "haupt"))), () => bearbeiten("einkauf_liste"));
+      return h("a", { class: "karte", href: "#/einkauf/" + l.id, style: { color: "var(--text)" } }, h("div", { class: "karte-kopf" },         h("h2", null, l.titel), h("span", { class: "rechts" }, sichtEtikett(l))), h("div", { class: "leise klein" }, n.length ? `${n.length} offen: ` + n.slice(0, 6).map(x => x.titel).join(", ") : h("span", { class: "erfuellt" }, "alles eingekauft"))); }))
+      : leer("", "Noch keine Einkaufsliste.", knopf("Liste anlegen", () => bearbeiten("einkauf_liste"), "haupt"))), () => bearbeiten("einkauf_liste"));
 };
 function einkaufListe(id) {
   const l = S.E.get(id);
-  if (!l) return leer("🤷", "Liste nicht gefunden.");
+  if (!l) return leer("", "Liste nicht gefunden.");
   const xs = kinder(id, "einkauf");
   const offen = xs.filter(x => !x.erledigt), fertig = xs.filter(x => x.erledigt);
   const bekannt = [...new Set(alle("einkauf").map(x => x.titel))].slice(0, 300);
@@ -355,13 +369,13 @@ function einkaufListe(id) {
     checkKnopf(!!x.erledigt, () => aendern(x.id, { erledigt: !x.erledigt }), true),
     h("span", { class: "haupt" }, h("span", { class: "titel" }, x.daten.menge ? h("b", null, x.daten.menge + " ") : null, x.titel),
       x.daten.notiz || (x.besitzer_id !== S.ich.id) ? h("span", { class: "unter" }, [x.daten.notiz, x.besitzer_id !== S.ich.id ? "von " + name(x.besitzer_id) : ""].filter(Boolean).join(" · ")) : null),
-    h("button", { class: "knopf rund klein", "aria-label": "Bearbeiten", onclick: ev => { ev.stopPropagation(); bearbeiten("einkauf", x); } }, ic("stift")));
-  return mitPlus(seite(kopf((l.daten.emoji || "🛒") + " " + l.titel, [
+    h("button", { class: "link", type: "button", "aria-label": "Artikel ändern", onclick: ev => { ev.stopPropagation(); bearbeiten("einkauf", x); } }, "Ändern"));
+  return mitPlus(seite(kopf(l.titel, [
     alle("einkauf_liste").length > 1 ? h("a", { class: "knopf", href: "#/einkauf" }, "Alle Listen") : null,
     knopf("", () => bearbeiten("einkauf_liste", l), "rund", "stift")], ["#/einkauf", "Einkauf"]),
     h("div", { class: "schnell" }, eingabe, h("datalist", { id: "ek-vorschlag" }, bekannt.map(b => h("option", { value: b })))),
     offen.length ? ordnung.filter(k => nachKat[k]).map(k => [h("div", { class: "gruppe-titel" }, k), h("ul", { class: "liste karte knapp" }, nachKat[k].map(zeile))])
-      : leer("🎉", "Alles eingekauft."),
+      : h("p", null, h("span", { class: "erfuellt" }, "alles eingekauft")),
     fertig.length ? h("div", { style: { "margin-top": "16px" } }, h("div", { class: "kopf" }, h("div", { class: "gruppe-titel", style: { margin: "0" } }, `Im Wagen (${fertig.length})`),
       h("div", { class: "rechts" }, knopf("Erledigte entfernen", async () => {
         for (const x of fertig) { await api("DELETE", "/eintraege/" + x.id); S.E.delete(x.id); } neuZeichnen(); meldung(`${fertig.length} Artikel entfernt`); }, "klein"))),
@@ -380,7 +394,7 @@ async function aufEinkaufsliste(titel, menge, quelle) {
     d.eintraege.forEach(merken); neuZeichnen(); meldung(`${posten.length} auf «${l.titel}»`, "Öffnen", () => location.hash = "#/einkauf/" + l.id);
   };
   if (listen.length === 1) return senden(listen[0]);
-  const zu = dialog("Auf welche Liste?", h("div", { class: "stapel" }, listen.map(l => h("button", { class: "knopf", type: "button", style: { width: "100%" }, onclick: () => { zu(); senden(l); } }, (l.daten.emoji || "🛒") + " " + l.titel))));
+  const zu = dialog("Auf welche Liste?", h("div", { class: "stapel" }, listen.map(l => h("button", { class: "knopf", type: "button", style: { width: "100%" }, onclick: () => { zu(); senden(l); } }, l.titel))));
 }
 
 /* ---------- Ausgaben ---------- */
@@ -389,7 +403,6 @@ FORMULARE.ausgaben_topf = {
   titel: "Kasse", sicht: false,
   felder: e => [
     { key: "titel", text: "Name", pflicht: true, platz: "z. B. Ferien Tessin, Geschenk Mama, WG-Kasse" },
-    { key: "d.emoji", text: "Symbol", platz: "💰", halb: true, max: 8 },
     { key: "d.waehrung", text: "Währung", art: "auswahl", optionen: [["CHF", "CHF"], ["EUR", "EUR"]], std: "CHF", halb: true },
     { key: "d.teilnehmer", text: "Wer macht mit?", art: "personen", optionen: () => menschen(), std: [S.ich.id] },
   ],
@@ -445,16 +458,16 @@ V.ausgaben = function (args, q) {
   const toepfe = alle("ausgaben_topf");
   return mitPlus(seite(kopf("Ausgaben", [neuKnopf("Kasse", () => bearbeiten("ausgaben_topf"))]),
     toepfe.length ? h("div", { class: "raster" }, toepfe.map(t => { const s = salden(t), m = s.netto[S.ich.id] || 0, w = t.daten.waehrung || "CHF";
-      return h("a", { class: "karte", href: "#/ausgaben/" + t.id, style: { color: "var(--text)" } }, h("div", { class: "karte-kopf" }, h("span", { style: { "font-size": "1.5rem" } }, t.daten.emoji || "💰"), h("h2", null, t.titel),
+      return h("a", { class: "karte", href: "#/ausgaben/" + t.id, style: { color: "var(--text)" } }, h("div", { class: "karte-kopf" }, h("h2", null, t.titel),
         h("span", { class: "rechts avas" }, topfTeilnehmer(t).map(i => ava(person(i), "mini")))),
         h("div", { class: "leise klein" }, "Total ", chf(s.total, w)),
-        h("div", { class: "betrag " + (m > 0.004 ? "plus-betrag" : m < -0.004 ? "minus-betrag" : "") }, m > 0.004 ? `Du bekommst ${chf(m, w)}` : m < -0.004 ? `Du schuldest ${chf(-m, w)}` : "Ausgeglichen ✓")); }))
-      : leer("💰", "Gemeinsame Kassen für Ferien, Geschenke oder den Haushalt – Hüsli rechnet aus, wer wem wie viel schuldet.", knopf("Kasse anlegen", () => bearbeiten("ausgaben_topf"), "haupt"))),
+        h("div", { class: "betrag " + (m > 0.004 ? "plus-betrag" : m < -0.004 ? "minus-betrag" : "") }, m > 0.004 ? `Du bekommst ${chf(m, w)}` : m < -0.004 ? `Du schuldest ${chf(-m, w)}` : h("span", { class: "erfuellt" }, "ausgeglichen"))); }))
+      : leer("", "Gemeinsame Kassen für Ferien, Geschenke oder den Haushalt – Hüsli rechnet aus, wer wem wie viel schuldet.", knopf("Kasse anlegen", () => bearbeiten("ausgaben_topf"), "haupt"))),
     () => bearbeiten("ausgaben_topf"));
 };
 function topfDetail(id, q) {
   const t = S.E.get(id);
-  if (!t) return leer("🤷", "Kasse nicht gefunden.");
+  if (!t) return leer("", "Kasse nicht gefunden.");
   const w = t.daten.waehrung || "CHF";
   const s = salden(t);
   const ansicht = q.get("a") || "liste";
@@ -467,7 +480,7 @@ function topfDetail(id, q) {
       h("span", { class: "haupt" }, `${name(z.von)} → ${name(z.an)}`), h("span", { class: "betrag" }, chf(z.betrag, w)),
       h("button", { class: "knopf klein", onclick: async () => { if (await bestaetigen(`${name(z.von)} hat ${name(z.an)} ${chf(z.betrag, w)} bezahlt?`, "Ja, ausgeglichen"))
         neu("ausgabe", { eltern_id: id, titel: "Ausgleich", datum: heuteIso(), daten: { betrag: z.betrag, bezahlt_von: z.von, geteilt: [z.an], rueckzahlung: true, kategorie: "Ausgleich" } }); } }, "Erledigt"))))]
-      : h("p", { class: "leise" }, "Alles ausgeglichen ✓"));
+      : h("p", null, h("span", { class: "erfuellt" }, "alles ausgeglichen")));
   const statKarte = h("div", { class: "karte" }, h("h2", null, "Nach Kategorie"), h("p", { class: "leise klein" }, "Total ", chf(s.total, w)),
     Object.entries(s.proKat).sort((a, b) => b[1] - a[1]).map(([k, v]) => h("div", { style: { "margin-bottom": "8px" } },
       h("div", { class: "klein", style: { display: "flex" } }, h("span", null, k), h("span", { class: "betrag", style: { "margin-left": "auto" } }, chf(v, w))),
@@ -476,10 +489,10 @@ function topfDetail(id, q) {
       h("div", { class: "klein", style: { display: "flex" } }, h("span", null, MONATE[Number(m.slice(5)) - 1] + " " + m.slice(0, 4)), h("span", { class: "betrag", style: { "margin-left": "auto" } }, chf(v, w))))] : null);
   const liste = xs.length ? h("ul", { class: "liste karte knapp" }, xs.map(a => h("li", { class: "zeile klickbar", onclick: () => bearbeiten("ausgabe", a) },
     ava(person(a.daten.bezahlt_von), "mini"),
-    h("span", { class: "haupt" }, h("span", { class: "titel" }, a.daten.rueckzahlung ? "↔ " : "", a.titel),
+    h("span", { class: "haupt" }, h("span", { class: "titel" }, a.titel),
       h("span", { class: "unter" }, `${fmtDatum(a.datum)} · ${name(a.daten.bezahlt_von)} · ${a.daten.rueckzahlung ? "an " + (a.daten.geteilt || []).map(name).join(", ") : (a.daten.kategorie || "") + " · " + ((a.daten.geteilt || []).length === topfTeilnehmer(t).length ? "alle" : (a.daten.geteilt || []).map(name).join(", "))}`)),
-    h("span", { class: "betrag" }, chf(a.daten.betrag, w))))) : leer("🧾", "Noch keine Ausgaben.", knopf("Erste Ausgabe", () => ausgabeNeu(t), "haupt"));
-  return mitPlus(seite(kopf((t.daten.emoji || "💰") + " " + t.titel, [neuKnopf("Ausgabe", () => ausgabeNeu(t)),
+    h("span", { class: "betrag" }, chf(a.daten.betrag, w))))) : leer("", "Noch keine Ausgaben.", knopf("Erste Ausgabe", () => ausgabeNeu(t), "haupt"));
+  return mitPlus(seite(kopf(t.titel, [neuKnopf("Ausgabe", () => ausgabeNeu(t)),
     h("a", { class: "knopf", href: "#/ausgaben/import/" + id }, ic("import"), "Import"), knopf("", () => bearbeiten("ausgaben_topf", t), "rund", "stift")], ["#/ausgaben", "Ausgaben"]),
     h("div", { class: "zwei" }, h("div", null, liste), h("div", { class: "stapel" }, saldoKarte, statKarte))), () => ausgabeNeu(t));
 }
@@ -509,7 +522,7 @@ function datumLesen(s) {
 }
 function ausgabenImport(id) {
   const t = S.E.get(id);
-  if (!t) return leer("🤷", "Kasse nicht gefunden.");
+  if (!t) return leer("", "Kasse nicht gefunden.");
   const box = h("div");
   const datei = h("input", { type: "file", accept: ".csv,.txt,text/csv", onchange: async () => { const f = datei.files[0]; if (f) { let txt = await f.text(); if (txt.includes("�")) txt = new TextDecoder("windows-1252").decode(await f.arrayBuffer()); zeige(txt); } } });
   const feld = h("textarea", { class: "eingabe", rows: 6, placeholder: "…oder CSV-Text hier einfügen" });
